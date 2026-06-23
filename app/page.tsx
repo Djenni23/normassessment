@@ -4,16 +4,19 @@ import { useRouter } from "next/navigation";
 import { Header, type Screen } from "@/components/Header";
 import { TypeStep } from "@/components/steps/TypeStep";
 import { InfoStep, type ContactForm } from "@/components/steps/InfoStep";
+import { SiteStep } from "@/components/steps/SiteStep";
 import { AssessStep, type Equipment } from "@/components/steps/AssessStep";
 import { ResultsStep } from "@/components/steps/ResultsStep";
 import { SubmitStep, type SubmittedRecord } from "@/components/steps/SubmitStep";
 import { PRESETS, type ProjectTypeId, TYPES, CATALOG } from "@/lib/catalog";
 import { DEFAULT_SETTINGS, type Settings } from "@/lib/calc";
+import { EMPTY_SITE, type SiteForm } from "@/lib/site";
 
 type State = {
   screen: Screen;
   projectType: ProjectTypeId | null;
   form: ContactForm;
+  site: SiteForm;
   equipment: Equipment;
   infoError: boolean;
   submitted: SubmittedRecord | null;
@@ -22,7 +25,8 @@ type State = {
 const initial: State = {
   screen: "type",
   projectType: null,
-  form: { name: "", phone: "", whatsapp: "", email: "", country: "", city: "", address: "" },
+  form: { projectName: "", name: "", phone: "", whatsapp: "", email: "", country: "", city: "", address: "" },
+  site: EMPTY_SITE,
   equipment: {},
   infoError: false,
   submitted: null,
@@ -33,6 +37,9 @@ type Action =
   | { type: "BACK" }
   | { type: "SELECT_TYPE"; id: ProjectTypeId }
   | { type: "SET_FIELD"; k: keyof ContactForm; v: string }
+  | { type: "SET_SITE"; k: keyof SiteForm; v: SiteForm[keyof SiteForm] }
+  | { type: "SET_ROOF"; k: keyof SiteForm["roof"]; v: SiteForm["roof"][keyof SiteForm["roof"]] }
+  | { type: "SET_GROUND"; k: keyof SiteForm["ground"]; v: SiteForm["ground"][keyof SiteForm["ground"]] }
   | { type: "INC"; id: string }
   | { type: "DEC"; id: string }
   | { type: "HOURS"; id: string; h: number }
@@ -40,7 +47,7 @@ type Action =
   | { type: "SUBMITTED"; record: SubmittedRecord }
   | { type: "RESTART" };
 
-const ORDER: Screen[] = ["type", "info", "assess", "results"];
+const ORDER: Screen[] = ["type", "info", "site", "assess", "results"];
 
 function reducer(s: State, a: Action): State {
   switch (a.type) {
@@ -58,6 +65,12 @@ function reducer(s: State, a: Action): State {
     }
     case "SET_FIELD":
       return { ...s, form: { ...s.form, [a.k]: a.v }, infoError: false };
+    case "SET_SITE":
+      return { ...s, site: { ...s.site, [a.k]: a.v } };
+    case "SET_ROOF":
+      return { ...s, site: { ...s.site, roof: { ...s.site.roof, [a.k]: a.v } } };
+    case "SET_GROUND":
+      return { ...s, site: { ...s.site, ground: { ...s.site.ground, [a.k]: a.v } } };
     case "INC": {
       const cur = s.equipment[a.id]?.qty ?? 0;
       return { ...s, equipment: { ...s.equipment, [a.id]: { ...(s.equipment[a.id] ?? {}), qty: cur + 1 } } };
@@ -109,7 +122,7 @@ export default function Home() {
       dispatch({ type: "INFO_ERROR" });
       return;
     }
-    go("assess");
+    go("site");
   };
 
   const onSubmit = async () => {
@@ -121,6 +134,7 @@ export default function Home() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           projectType: state.projectType,
+          projectName: state.form.projectName,
           contact: {
             name: state.form.name,
             phone: state.form.phone,
@@ -133,6 +147,7 @@ export default function Home() {
             address: state.form.address,
           },
           equipment: state.equipment,
+          site: state.site,
         }),
       });
       if (!res.ok) throw new Error("submit failed");
@@ -181,6 +196,16 @@ export default function Home() {
             error={state.infoError}
           />
         )}
+        {state.screen === "site" && (
+          <SiteStep
+            site={state.site}
+            onChange={(k, v) => dispatch({ type: "SET_SITE", k, v })}
+            onRoofChange={(k, v) => dispatch({ type: "SET_ROOF", k, v })}
+            onGroundChange={(k, v) => dispatch({ type: "SET_GROUND", k, v })}
+            onBack={goBack}
+            onContinue={() => go("assess")}
+          />
+        )}
         {state.screen === "assess" && (
           <AssessStep
             equipment={state.equipment}
@@ -201,6 +226,7 @@ export default function Home() {
             equipment={state.equipment}
             projectType={state.projectType}
             settings={settings}
+            site={state.site}
             onBack={goBack}
             onSubmit={onSubmit}
           />

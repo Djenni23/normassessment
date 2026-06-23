@@ -13,6 +13,7 @@ import {
 import { COUNTRIES } from "@/lib/catalog";
 
 export type ContactForm = {
+  projectName: string;
   name: string;
   phone: string;
   whatsapp: string;
@@ -46,6 +47,21 @@ export function InfoStep({
       <Lede>So our team can reach you with your tailored solar proposal.</Lede>
 
       <div className="bg-white border border-[color:var(--border)] rounded-[22px] shadow-[0_8px_28px_rgba(40,60,110,.07)] p-[26px]">
+        <Section icon="badge" label="Project" />
+        <div className="grid gap-[15px] [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+          <label className="block sm:col-span-2" style={{ gridColumn: "1/-1" }}>
+            <span className={fieldLabel}>
+              Project / company name
+            </span>
+            <input
+              {...bind("projectName")}
+              placeholder="e.g. Diallo Family Home, Boutique Soleil…"
+              className={fieldInput}
+            />
+          </label>
+        </div>
+        <div className="h-px bg-[#EDF1F7] my-[20px]" />
+
         <Section icon="person" label="Contact" />
         <div className="grid gap-[15px] [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
           <label className="block">

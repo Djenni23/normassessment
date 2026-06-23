@@ -73,3 +73,62 @@ export const CATEGORY_ICON: Record<ProjectCategory, string> = {
   Commercial: "business_center",
   Agricultural: "agriculture",
 };
+
+// --- Site & system checklist (from Norm Enerji preliminary form) ---
+
+export type SystemTypeId = "on_grid" | "off_grid" | "hybrid";
+export const SYSTEM_TYPES: Array<{ id: SystemTypeId; label: string; desc: string; icon: string }> = [
+  { id: "on_grid", label: "On-Grid", desc: "Connected to the utility grid", icon: "power" },
+  { id: "off_grid", label: "Off-Grid", desc: "Fully autonomous, no grid", icon: "bolt" },
+  { id: "hybrid", label: "Hybrid", desc: "Grid + batteries", icon: "battery_charging_full" },
+];
+
+export type InstallZoneId = "roof" | "ground";
+export const INSTALL_ZONES: Array<{ id: InstallZoneId; label: string; icon: string }> = [
+  { id: "roof", label: "Rooftop", icon: "roofing" },
+  { id: "ground", label: "Ground", icon: "landscape" },
+];
+
+export type RoofTypeId = "flat" | "sloped";
+export const ROOF_TYPES: Array<{ id: RoofTypeId; label: string }> = [
+  { id: "flat", label: "Flat" },
+  { id: "sloped", label: "Sloped" },
+];
+
+export type RoofMaterialId = "trapezoidal" | "tile" | "concrete" | "other";
+export const ROOF_MATERIALS: Array<{ id: RoofMaterialId; label: string }> = [
+  { id: "trapezoidal", label: "Trapezoidal sheet" },
+  { id: "tile", label: "Tile" },
+  { id: "concrete", label: "Concrete" },
+  { id: "other", label: "Other" },
+];
+
+export type OrientationId = "south" | "east" | "west" | "north" | "other";
+export const ORIENTATIONS: Array<{ id: OrientationId; label: string }> = [
+  { id: "south", label: "South" },
+  { id: "east", label: "East" },
+  { id: "west", label: "West" },
+  { id: "north", label: "North" },
+  { id: "other", label: "Other" },
+];
+
+export type SoilId = "earth" | "concrete" | "other";
+export const SOILS: Array<{ id: SoilId; label: string }> = [
+  { id: "earth", label: "Earth" },
+  { id: "concrete", label: "Concrete" },
+  { id: "other", label: "Other" },
+];
+
+export type GoalId = "savings" | "backup" | "autonomy";
+export const GOALS: Array<{ id: GoalId; label: string; desc: string; icon: string }> = [
+  { id: "savings", label: "Electricity savings", desc: "Lower the monthly bill", icon: "savings" },
+  { id: "backup", label: "Backup power", desc: "Keep running during outages", icon: "history_toggle_off" },
+  { id: "autonomy", label: "Full autonomy", desc: "Completely off the grid", icon: "all_inclusive" },
+];
+
+export const SYSTEM_TYPE_LABEL: Record<SystemTypeId, string> = Object.fromEntries(
+  SYSTEM_TYPES.map((s) => [s.id, s.label])
+) as Record<SystemTypeId, string>;
+export const GOAL_LABEL: Record<GoalId, string> = Object.fromEntries(
+  GOALS.map((g) => [g.id, g.label])
+) as Record<GoalId, string>;

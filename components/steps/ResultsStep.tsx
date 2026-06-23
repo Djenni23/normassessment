@@ -2,20 +2,23 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "../Icon";
 import { StepLabel, H1, Lede, PrimaryButton, BackButton } from "../ui";
-import { CATALOG, CATEGORY_ICON, COLORS, TYPES, type ProjectTypeId } from "@/lib/catalog";
+import { CATALOG, CATEGORY_ICON, COLORS, TYPES, SYSTEM_TYPE_LABEL, GOAL_LABEL, type ProjectTypeId } from "@/lib/catalog";
 import { calc, fmt, type Settings } from "@/lib/calc";
+import type { SiteForm } from "@/lib/site";
 import type { Equipment } from "./AssessStep";
 
 export function ResultsStep({
   equipment,
   projectType,
   settings,
+  site,
   onBack,
   onSubmit,
 }: {
   equipment: Equipment;
   projectType: ProjectTypeId | null;
   settings: Settings;
+  site?: SiteForm;
   onBack: () => void;
   onSubmit: () => void;
 }) {
@@ -102,6 +105,28 @@ export function ResultsStep({
           <p className="text-[16px] text-[color:var(--ink-muted)]">
             Tailored for your {t?.label ?? "—"} project. Here&apos;s what we&apos;d put on site.
           </p>
+          {(site?.systemType || site?.goal || site?.installZone) && (
+            <div className="flex gap-2 flex-wrap mt-3">
+              {site?.systemType && (
+                <span className="inline-flex items-center gap-[6px] bg-[#EEF2FB] text-[color:var(--brand-navy)] px-3 py-[6px] rounded-[9px] font-display font-semibold text-[12.5px]">
+                  <Icon name="bolt" size={15} />
+                  {SYSTEM_TYPE_LABEL[site.systemType]}
+                </span>
+              )}
+              {site?.installZone && (
+                <span className="inline-flex items-center gap-[6px] bg-[#EEF2FB] text-[color:var(--brand-navy)] px-3 py-[6px] rounded-[9px] font-display font-semibold text-[12.5px]">
+                  <Icon name={site.installZone === "roof" ? "roofing" : "landscape"} size={15} />
+                  {site.installZone === "roof" ? "Rooftop" : "Ground"}
+                </span>
+              )}
+              {site?.goal && (
+                <span className="inline-flex items-center gap-[6px] bg-[#FFF7E6] text-[#B47B12] px-3 py-[6px] rounded-[9px] font-display font-semibold text-[12.5px]">
+                  <Icon name="flag" size={15} />
+                  {GOAL_LABEL[site.goal]}
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <div className="inline-flex items-center gap-[9px] bg-white border border-[color:var(--border)] rounded-[14px] px-4 py-[11px] shadow-[0_6px_20px_rgba(40,60,110,.07)]">
           <Icon name={catIcon} size={24} className="text-[color:var(--brand-navy)]" />
@@ -193,6 +218,32 @@ export function ResultsStep({
         </div>
       </div>
 
+      {(() => {
+        const bill = site?.monthlyBill ? Number(site.monthlyBill) : 0;
+        if (!bill || bill <= 0) return null;
+        const currency = site?.currency || "FCFA";
+        // Heuristic: an off-grid/hybrid system offsets ~85% of the bill; on-grid net-metered ~70%.
+        const offset = site?.systemType === "on_grid" ? 0.7 : 0.85;
+        const monthlySavings = bill * offset;
+        const annualSavings = monthlySavings * 12;
+        // Rough turnkey cost per kWp (West Africa typical range, conservative).
+        const costPerKwp = 950000; // ~ FCFA / kWp turnkey assumption
+        const estCost = c.pv * costPerKwp;
+        // Normalize cost by currency-vs-FCFA rough heuristics so the number is meaningful per local input.
+        const conv: Record<string, number> = { FCFA: 1, NGN: 2.6, GHS: 0.024, USD: 0.0016, EUR: 0.0015, MAD: 0.016, KES: 0.21, TRY: 0.06 };
+        const localCost = estCost * (conv[currency] ?? 1);
+        const paybackYears = annualSavings > 0 ? localCost / annualSavings : 0;
+        const co2Tons = (c.daily * 365 * 0.6) / 1000; // 0.6 kg CO2 / kWh grid avoided, → tons/year
+        return (
+          <div className="mt-[18px] grid gap-[15px] [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+            <BonusStat icon="savings" tint="#EAF6EF" ic="#1FA855" valueColor="#168944" value={formatCurrency(monthlySavings, currency)} unit={`/ month`} label="Estimated savings" />
+            <BonusStat icon="payments" tint="#EAF6EF" ic="#1FA855" valueColor="#168944" value={formatCurrency(annualSavings, currency)} unit={`/ year`} label="Annual savings" />
+            <BonusStat icon="schedule" tint="#EEF2FB" ic="#35508E" valueColor="#1B2A50" value={paybackYears > 0 ? paybackYears.toFixed(1) : "—"} unit="years" label="Payback period" />
+            <BonusStat icon="eco" tint="#F2FAF5" ic="#1FA855" valueColor="#168944" value={co2Tons.toFixed(2)} unit="t CO₂/yr" label="Avoided emissions" />
+          </div>
+        );
+      })()}
+
       <div
         className="mt-[18px] rounded-[22px] p-6 flex gap-4 items-start"
         style={{ background: "linear-gradient(135deg,#FFFBF2 0%,#FFF6E2 100%)", border: "1px solid #F6E2B0" }}
@@ -218,4 +269,25 @@ export function ResultsStep({
       </div>
     </div>
   );
+}
+
+function BonusStat({ icon, tint, ic, valueColor, value, unit, label }: { icon: string; tint: string; ic: string; valueColor: string; value: string; unit: string; label: string }) {
+  return (
+    <div className="rounded-[20px] p-5 bg-white border border-[color:var(--border)] shadow-[0_8px_24px_rgba(40,60,110,.07)]">
+      <div className="w-[46px] h-[46px] rounded-[13px] flex items-center justify-center" style={{ background: tint, color: ic }}>
+        <Icon name={icon} size={24} />
+      </div>
+      <div className="flex items-baseline gap-[5px] mt-4">
+        <span className="font-display font-extrabold text-[28px] tracking-[-.8px]" style={{ color: valueColor }}>{value}</span>
+        <span className="font-display font-semibold text-[13px] text-[#8493AC]">{unit}</span>
+      </div>
+      <div className="text-[13px] text-[color:var(--ink-muted)] font-semibold mt-[3px]">{label}</div>
+    </div>
+  );
+}
+
+function formatCurrency(n: number, currency: string) {
+  if (!Number.isFinite(n)) return "—";
+  const rounded = Math.round(n);
+  return `${rounded.toLocaleString("en-US")} ${currency}`;
 }

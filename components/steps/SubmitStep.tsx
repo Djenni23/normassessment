@@ -64,6 +64,9 @@ export function SubmitStep({
           View in dashboard
         </PrimaryButton>
       </div>
+      <p className="text-[12.5px] text-[color:var(--ink-faint)] mt-3">
+        Norm Enerji staff can review the full preliminary form at <span className="font-mono">/staff/{submitted.ref}</span>.
+      </p>
     </div>
   );
 }

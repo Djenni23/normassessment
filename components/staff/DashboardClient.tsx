@@ -1,21 +1,27 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { Icon } from "../Icon";
 import { Header } from "../Header";
 import { SettingsPanel } from "./SettingsPanel";
+import { SYSTEM_TYPE_LABEL, type SystemTypeId } from "@/lib/catalog";
 import type { Settings } from "@/lib/calc";
 
 type Assessment = {
   _id: string;
   ref: string;
   name: string;
+  projectName?: string;
   country: string;
   type: string;
   typeIcon: string;
   size: string;
   daily: string;
   panels: number;
+  systemType: SystemTypeId | null;
+  installZone: "roof" | "ground" | null;
+  goal: string | null;
   status: "New" | "In Review" | "Quoted";
   createdAt: string;
 };
@@ -166,7 +172,10 @@ function RecordRow({ r, index, fmtDate }: { r: Assessment; index: number; fmtDat
       ? "bg-[#FEF4DD] text-[color:var(--warning)]"
       : "bg-[#EAF6EF] text-[color:var(--success)]";
   return (
-    <div className="flex items-center gap-4 bg-white border border-[color:var(--border)] rounded-[16px] px-[18px] py-[15px] shadow-[0_5px_16px_rgba(40,60,110,.05)] flex-wrap transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(40,60,110,.12)]">
+    <Link
+      href={`/staff/${r.ref}`}
+      className="flex items-center gap-4 bg-white border border-[color:var(--border)] rounded-[16px] px-[18px] py-[15px] shadow-[0_5px_16px_rgba(40,60,110,.05)] flex-wrap transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(40,60,110,.12)] no-underline"
+    >
       <div
         className="w-[44px] h-[44px] rounded-[13px] shrink-0 flex items-center justify-center font-display font-bold text-[15px] text-white"
         style={{ background: AVATAR_COLORS[index % AVATAR_COLORS.length] }}
@@ -174,22 +183,32 @@ function RecordRow({ r, index, fmtDate }: { r: Assessment; index: number; fmtDat
         {initials}
       </div>
       <div className="flex-1 basis-[180px] min-w-[140px]">
-        <div className="font-display font-bold text-[15.5px] text-[color:var(--ink)]">{r.name}</div>
+        <div className="font-display font-bold text-[15.5px] text-[color:var(--ink)]">
+          {r.name}
+          {r.projectName && <span className="text-[color:var(--ink-faint)] font-normal text-[13px]"> · {r.projectName}</span>}
+        </div>
         <div className="text-[13px] text-[color:var(--ink-faint)] flex items-center gap-[5px] mt-[2px]">
           <Icon name="public" size={15} className="text-[color:var(--ink-ghost)]" />
           {r.country}
+          <span className="font-mono text-[11.5px] text-[color:var(--ink-ghost)] ml-2">{r.ref}</span>
         </div>
       </div>
       <div className="inline-flex items-center gap-[6px] bg-[#EEF2FB] text-[color:var(--brand-navy)] px-3 py-[6px] rounded-[9px] font-display font-semibold text-[12.5px]">
         <Icon name={r.typeIcon} size={16} />
         {r.type}
       </div>
+      {r.systemType && (
+        <div className="inline-flex items-center gap-[6px] bg-[#FFF7E6] text-[#B47B12] px-3 py-[6px] rounded-[9px] font-display font-semibold text-[12px]">
+          <Icon name="bolt" size={14} />
+          {SYSTEM_TYPE_LABEL[r.systemType]}
+        </div>
+      )}
       <div className="text-right min-w-[84px]">
         <div className="font-display font-bold text-[15px] text-[color:var(--ink)]">{r.size}</div>
         <div className="text-[11.5px] text-[color:var(--ink-ghost)]">{r.daily} kWh/day</div>
       </div>
       <div className="text-right min-w-[78px] text-[12.5px] text-[color:var(--ink-faint)] font-semibold">{fmtDate(r.createdAt)}</div>
       <div className={`min-w-[80px] text-center px-3 py-[7px] rounded-[9px] font-display font-bold text-[12px] ${statusCls}`}>{r.status}</div>
-    </div>
+    </Link>
   );
 }

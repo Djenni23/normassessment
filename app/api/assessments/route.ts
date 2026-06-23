@@ -1,8 +1,55 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongo";
 import { calc, DEFAULT_SETTINGS, genRef, type EquipmentInput, type Settings } from "@/lib/calc";
-import { TYPES, type ProjectTypeId } from "@/lib/catalog";
+import { TYPES, type ProjectTypeId, SYSTEM_TYPES, INSTALL_ZONES, GOALS, ROOF_TYPES, ROOF_MATERIALS, ORIENTATIONS, SOILS } from "@/lib/catalog";
 import { requireStaff } from "@/lib/auth";
+
+const ID_SETS = {
+  systemType: new Set(SYSTEM_TYPES.map((x) => x.id)),
+  installZone: new Set(INSTALL_ZONES.map((x) => x.id)),
+  goal: new Set(GOALS.map((x) => x.id)),
+  roofType: new Set(ROOF_TYPES.map((x) => x.id)),
+  roofMaterial: new Set(ROOF_MATERIALS.map((x) => x.id)),
+  orientation: new Set(ORIENTATIONS.map((x) => x.id)),
+  soil: new Set(SOILS.map((x) => x.id)),
+};
+const oneOf = <T extends string>(set: Set<string>, v: unknown): T | null =>
+  typeof v === "string" && set.has(v) ? (v as T) : null;
+const str = (v: unknown, max = 500) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+const numStr = (v: unknown) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+function sanitizeSite(raw: unknown) {
+  const s = (raw ?? {}) as Record<string, unknown>;
+  const roof = (s.roof ?? {}) as Record<string, unknown>;
+  const ground = (s.ground ?? {}) as Record<string, unknown>;
+  const bill = numStr(s.monthlyBill);
+  return {
+    systemType: oneOf(ID_SETS.systemType, s.systemType),
+    installZone: oneOf(ID_SETS.installZone, s.installZone),
+    roof: {
+      type: oneOf(ID_SETS.roofType, roof.type),
+      material: oneOf(ID_SETS.roofMaterial, roof.material),
+      materialOther: str(roof.materialOther, 80),
+      orientation: oneOf(ID_SETS.orientation, roof.orientation),
+      orientationOther: str(roof.orientationOther, 80),
+      tiltDeg: numStr(roof.tiltDeg),
+    },
+    ground: {
+      surfaceSqm: numStr(ground.surfaceSqm),
+      soil: oneOf(ID_SETS.soil, ground.soil),
+      soilOther: str(ground.soilOther, 80),
+    },
+    goal: oneOf(ID_SETS.goal, s.goal),
+    moduleBrand: str(s.moduleBrand, 120),
+    timeline: str(s.timeline, 200),
+    monthlyBill: bill != null && bill > 0 ? bill : null,
+    currency: str(s.currency, 8) || "FCFA",
+    notes: str(s.notes, 2000),
+  };
+}
 
 async function loadSettings(): Promise<Settings> {
   const db = await getDb();
@@ -41,11 +88,13 @@ export async function POST(req: Request) {
 
   const settings = await loadSettings();
   const computed = calc(equipment, settings);
+  const site = sanitizeSite(body.site);
 
   const ref = genRef();
   const doc = {
     ref,
     projectType,
+    projectName: str(body.projectName, 200),
     contact: {
       name: String(contact.name).trim(),
       phone: String(contact.phone).trim(),
@@ -58,6 +107,7 @@ export async function POST(req: Request) {
       address: String(location.address ?? "").trim(),
     },
     equipment,
+    site,
     computed,
     typeLabel: t.label,
     typeIcon: t.icon,
@@ -93,12 +143,16 @@ export async function GET(req: Request) {
       _id: String(d._id),
       ref: d.ref,
       name: d.contact?.name ?? "",
+      projectName: d.projectName ?? "",
       country: d.location?.country ?? "",
       type: d.typeLabel ?? "",
       typeIcon: d.typeIcon ?? "home",
       size: `${(d.computed?.pv ?? 0).toFixed(1)} kWp`,
       daily: (d.computed?.daily ?? 0).toFixed(1),
       panels: d.computed?.panels ?? 0,
+      systemType: d.site?.systemType ?? null,
+      installZone: d.site?.installZone ?? null,
+      goal: d.site?.goal ?? null,
       status: d.status ?? "New",
       createdAt: d.createdAt,
     }))

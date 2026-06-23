@@ -3,12 +3,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { Icon } from "./Icon";
 
-export type Screen = "type" | "info" | "assess" | "results" | "submit" | "dash";
+export type Screen = "type" | "info" | "site" | "assess" | "results" | "submit" | "dash";
 
 const STEP_DEFS: Array<{ key: Screen; label: string }> = [
   { key: "type", label: "Project" },
   { key: "info", label: "Details" },
-  { key: "assess", label: "Assessment" },
+  { key: "site", label: "Site" },
+  { key: "assess", label: "Equipment" },
   { key: "results", label: "Results" },
   { key: "submit", label: "Done" },
 ];
