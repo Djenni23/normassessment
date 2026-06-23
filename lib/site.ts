@@ -11,6 +11,10 @@ import type {
 export type SiteForm = {
   systemType: SystemTypeId | null;
   installZone: InstallZoneId | null;
+  // Section 3 — explicit asks from the checklist (optional, free text → number on submit)
+  batteryCapacityKwh: string;
+  inverterCount: string;
+  inverterCapacityKw: string;
   roof: {
     type: RoofTypeId | null;
     material: RoofMaterialId | null;
@@ -35,6 +39,9 @@ export type SiteForm = {
 export const EMPTY_SITE: SiteForm = {
   systemType: null,
   installZone: null,
+  batteryCapacityKwh: "",
+  inverterCount: "",
+  inverterCapacityKw: "",
   roof: { type: null, material: null, materialOther: "", orientation: null, orientationOther: "", tiltDeg: "" },
   ground: { surfaceSqm: "", soil: null, soilOther: "" },
   goal: null,

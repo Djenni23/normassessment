@@ -176,7 +176,6 @@ export default function Home() {
         screen={state.screen}
         onHome={() => dispatch({ type: "RESTART" })}
         staffHref="/staff"
-        staffLabel="Staff"
         staffIcon="dashboard"
       />
       <main className="flex-1 w-full max-w-[1200px] mx-auto px-[22px] pt-[30px] pb-16">

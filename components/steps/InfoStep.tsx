@@ -11,6 +11,7 @@ import {
   fieldInput,
 } from "../ui";
 import { COUNTRIES } from "@/lib/catalog";
+import { useT } from "../LangProvider";
 
 export type ContactForm = {
   projectName: string;
@@ -36,68 +37,67 @@ export function InfoStep({
   onContinue: () => void;
   error: boolean;
 }) {
+  const t = useT();
   const bind = (k: keyof ContactForm) => ({
     value: form[k],
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => onChange(k, e.target.value),
   });
   return (
     <div className="anim-fadeUp max-w-[760px] mx-auto">
-      <StepLabel>Step 2 · Details</StepLabel>
-      <H1>A few details about you</H1>
-      <Lede>So our team can reach you with your tailored solar proposal.</Lede>
+      <StepLabel>{t("info.step_label")}</StepLabel>
+      <H1>{t("info.title")}</H1>
+      <Lede>{t("info.subtitle")}</Lede>
 
       <div className="bg-white border border-[color:var(--border)] rounded-[22px] shadow-[0_8px_28px_rgba(40,60,110,.07)] p-[26px]">
-        <Section icon="badge" label="Project" />
+        <Section icon="badge" label={t("info.section.project")} />
         <div className="grid gap-[15px] [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
           <label className="block sm:col-span-2" style={{ gridColumn: "1/-1" }}>
-            <span className={fieldLabel}>
-              Project / company name
-            </span>
+            <span className={fieldLabel}>{t("info.project_name")}</span>
             <input
               {...bind("projectName")}
-              placeholder="e.g. Diallo Family Home, Boutique Soleil…"
+              placeholder={t("info.project_name_ph")}
               className={fieldInput}
             />
           </label>
         </div>
         <div className="h-px bg-[#EDF1F7] my-[20px]" />
 
-        <Section icon="person" label="Contact" />
+        <Section icon="person" label={t("info.section.contact")} />
         <div className="grid gap-[15px] [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
           <label className="block">
             <span className={fieldLabel}>
-              Full name <span className="text-[color:var(--danger)]">*</span>
+              {t("info.name")} <span className="text-[color:var(--danger)]">*</span>
             </span>
-            <input {...bind("name")} placeholder="e.g. Amadou Diallo" className={fieldInput} />
+            <input {...bind("name")} placeholder={t("info.name_ph")} className={fieldInput} />
           </label>
           <label className="block">
             <span className={fieldLabel}>
-              Phone number <span className="text-[color:var(--danger)]">*</span>
+              {t("info.phone")} <span className="text-[color:var(--danger)]">*</span>
             </span>
-            <input {...bind("phone")} placeholder="+221 ..." className={fieldInput} />
+            <input {...bind("phone")} placeholder={t("info.phone_ph")} className={fieldInput} />
           </label>
           <label className="block">
             <span className={fieldLabel}>
-              <Icon name="chat" size={15} className="align-[-2px] text-[color:var(--success)]" /> WhatsApp number
+              <Icon name="chat" size={15} className="align-[-2px] text-[color:var(--success)]" /> {t("info.whatsapp")}
             </span>
-            <input {...bind("whatsapp")} placeholder="Same as phone?" className={fieldInput} />
+            <input {...bind("whatsapp")} placeholder={t("info.whatsapp_ph")} className={fieldInput} />
           </label>
           <label className="block">
-            <span className={fieldLabel}>Email</span>
-            <input {...bind("email")} placeholder="you@example.com" className={fieldInput} />
+            <span className={fieldLabel}>{t("info.email")}</span>
+            <input {...bind("email")} placeholder={t("info.email_ph")} className={fieldInput} />
           </label>
         </div>
 
         <div className="h-px bg-[#EDF1F7] my-[24px]" />
-        <Section icon="location_on" label="Location" />
+        <Section icon="location_on" label={t("info.section.location")} />
         <div className="grid gap-[15px] [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
           <label className="block">
             <span className={fieldLabel}>
-              Country <span className="text-[color:var(--danger)]">*</span>
+              {t("info.country")} <span className="text-[color:var(--danger)]">*</span>
             </span>
             <div className="relative">
               <select {...bind("country")} className={`${fieldInput} pr-[42px] cursor-pointer`}>
-                <option value="">Select a country…</option>
+                <option value="">{t("info.country_ph")}</option>
                 {COUNTRIES.map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -110,12 +110,12 @@ export function InfoStep({
             </div>
           </label>
           <label className="block">
-            <span className={fieldLabel}>City</span>
-            <input {...bind("city")} placeholder="e.g. Dakar" className={fieldInput} />
+            <span className={fieldLabel}>{t("info.city")}</span>
+            <input {...bind("city")} placeholder={t("info.city_ph")} className={fieldInput} />
           </label>
           <label className="block sm:col-span-2 col-[1/-1]">
-            <span className={fieldLabel}>Project address</span>
-            <input {...bind("address")} placeholder="Where the system will be installed" className={fieldInput} />
+            <span className={fieldLabel}>{t("info.address")}</span>
+            <input {...bind("address")} placeholder={t("info.address_ph")} className={fieldInput} />
           </label>
         </div>
       </div>
@@ -123,16 +123,16 @@ export function InfoStep({
       <div className="flex items-center justify-between gap-[14px] flex-wrap mt-[26px]">
         <BackButton onClick={onBack}>
           <Icon name="arrow_back" size={20} />
-          Back
+          {t("common.back")}
         </BackButton>
         <div className="flex items-center gap-[16px]">
           {error && (
             <span className="text-[13.5px] text-[color:var(--danger)] font-semibold">
-              Please add name, phone &amp; country
+              {t("info.error_missing")}
             </span>
           )}
           <PrimaryButton onClick={onContinue}>
-            Continue
+            {t("common.continue")}
             <Icon name="arrow_forward" size={20} />
           </PrimaryButton>
         </div>

@@ -6,11 +6,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { fieldLabel, fieldInput, PrimaryButton } from "@/components/ui";
+import { useT } from "@/components/LangProvider";
+import { LangSwitcher } from "@/components/LangSwitcher";
 
 function LoginInner() {
   const router = useRouter();
   const params = useSearchParams();
   const from = params.get("from") || "/staff";
+  const t = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +26,7 @@ function LoginInner() {
     const res = await signIn("credentials", { email, password, redirect: false });
     setBusy(false);
     if (res?.error) {
-      setError("Invalid email or password");
+      setError(t("login.invalid"));
       return;
     }
     router.push(from);
@@ -31,7 +34,8 @@ function LoginInner() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-5">
+    <div className="min-h-screen flex flex-col items-center justify-center px-5 relative">
+      <div className="absolute top-5 right-5"><LangSwitcher /></div>
       <Link href="/" className="flex items-center gap-3 mb-8 no-underline">
         <Image src="/norm-mark.png" alt="Norm Enerji" width={42} height={42} className="rounded-[11px]" />
         <div className="font-display font-extrabold text-[19px] tracking-[-.4px] text-[#2A3F73]">NORM ENERJI</div>
@@ -40,23 +44,23 @@ function LoginInner() {
         onSubmit={submit}
         className="w-full max-w-[400px] bg-white border border-[color:var(--border)] rounded-[22px] shadow-[0_8px_28px_rgba(40,60,110,.08)] p-7"
       >
-        <h1 className="font-display font-bold text-[22px] text-[color:var(--ink)]">Staff sign-in</h1>
-        <p className="text-[14px] text-[color:var(--ink-muted)] mt-1 mb-6">Access the Norm Enerji assessment dashboard.</p>
+        <h1 className="font-display font-bold text-[22px] text-[color:var(--ink)]">{t("login.title")}</h1>
+        <p className="text-[14px] text-[color:var(--ink-muted)] mt-1 mb-6">{t("login.subtitle")}</p>
 
         <label className="block mb-4">
-          <span className={fieldLabel}>Email</span>
+          <span className={fieldLabel}>{t("login.email")}</span>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@normenerji.com"
+            placeholder={t("login.email_ph")}
             className={fieldInput}
             required
             autoComplete="email"
           />
         </label>
         <label className="block mb-5">
-          <span className={fieldLabel}>Password</span>
+          <span className={fieldLabel}>{t("login.password")}</span>
           <input
             type="password"
             value={password}
@@ -75,12 +79,12 @@ function LoginInner() {
         )}
 
         <PrimaryButton type="submit" disabled={busy}>
-          {busy ? "Signing in…" : "Sign in"}
+          {busy ? t("login.signing_in") : t("login.signin")}
           <Icon name="arrow_forward" size={20} />
         </PrimaryButton>
       </form>
       <Link href="/" className="mt-5 text-[14px] text-[color:var(--ink-muted)] hover:text-[color:var(--brand-navy)] flex items-center gap-1">
-        <Icon name="arrow_back" size={16} /> Back to customer view
+        <Icon name="arrow_back" size={16} /> {t("login.back_customer")}
       </Link>
     </div>
   );

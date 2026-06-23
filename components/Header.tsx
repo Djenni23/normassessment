@@ -2,33 +2,38 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Icon } from "./Icon";
+import { LangSwitcher } from "./LangSwitcher";
+import { useT } from "./LangProvider";
+import type { DictKey } from "@/lib/i18n/types";
 
 export type Screen = "type" | "info" | "site" | "assess" | "results" | "submit" | "dash";
 
-const STEP_DEFS: Array<{ key: Screen; label: string }> = [
-  { key: "type", label: "Project" },
-  { key: "info", label: "Details" },
-  { key: "site", label: "Site" },
-  { key: "assess", label: "Equipment" },
-  { key: "results", label: "Results" },
-  { key: "submit", label: "Done" },
+const STEP_DEFS: Array<{ key: Screen; labelKey: DictKey }> = [
+  { key: "type", labelKey: "header.step.project" },
+  { key: "info", labelKey: "header.step.details" },
+  { key: "site", labelKey: "header.step.site" },
+  { key: "assess", labelKey: "header.step.equipment" },
+  { key: "results", labelKey: "header.step.results" },
+  { key: "submit", labelKey: "header.step.done" },
 ];
 
 export function Header({
   screen,
   onHome,
   staffHref,
-  staffLabel = "Staff",
+  staffLabelKey,
   staffIcon = "dashboard",
 }: {
   screen: Screen;
   onHome?: () => void;
   staffHref: string;
-  staffLabel?: string;
+  staffLabelKey?: DictKey;
   staffIcon?: string;
 }) {
+  const t = useT();
   const showStepper = screen !== "dash";
   const curIdx = Math.max(0, STEP_DEFS.findIndex((s) => s.key === screen));
+  const staffLabel = t(staffLabelKey ?? "header.staff");
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur-md bg-white/80 border-b border-[color:var(--border)]">
@@ -48,7 +53,7 @@ export function Header({
           <div className="leading-[1.05] text-left">
             <div className="font-display font-extrabold text-[19px] tracking-[-.4px] text-[#2A3F73]">NORM ENERJI</div>
             <div className="font-mono font-medium text-[10.5px] tracking-[1.5px] text-[color:var(--brand-amber)] uppercase">
-              Solar Assessment
+              {t("header.subtitle")}
             </div>
           </div>
         </button>
@@ -83,7 +88,7 @@ export function Header({
                         : "text-[#A4B0C4]"
                     }`}
                   >
-                    {s.label}
+                    {t(s.labelKey)}
                   </div>
                   {hasBar && (
                     <div
@@ -96,6 +101,8 @@ export function Header({
             })}
           </div>
         )}
+
+        <LangSwitcher />
 
         <Link
           href={staffHref}

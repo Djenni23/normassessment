@@ -5,7 +5,7 @@ import { signOut } from "next-auth/react";
 import { Icon } from "../Icon";
 import { Header } from "../Header";
 import { SettingsPanel } from "./SettingsPanel";
-import { SYSTEM_TYPE_LABEL, type SystemTypeId } from "@/lib/catalog";
+import { SYSTEM_TYPE_LABEL, GOAL_LABEL, type SystemTypeId, type GoalId } from "@/lib/catalog";
 import type { Settings } from "@/lib/calc";
 
 type Assessment = {
@@ -21,7 +21,7 @@ type Assessment = {
   panels: number;
   systemType: SystemTypeId | null;
   installZone: "roof" | "ground" | null;
-  goal: string | null;
+  goal: GoalId | null;
   status: "New" | "In Review" | "Quoted";
   createdAt: string;
 };
@@ -78,7 +78,7 @@ export function DashboardClient({ initialSettings }: { initialSettings: Settings
 
   return (
     <>
-      <Header screen="dash" staffHref="/" staffLabel="Customer view" staffIcon="person" />
+      <Header screen="dash" staffHref="/" staffLabelKey="header.customer_view" staffIcon="person" />
       <main className="flex-1 w-full max-w-[1200px] mx-auto px-[22px] pt-[30px] pb-16 anim-fadeUp">
         <div className="flex items-end justify-between gap-4 flex-wrap mb-[22px]">
           <div>
@@ -201,6 +201,12 @@ function RecordRow({ r, index, fmtDate }: { r: Assessment; index: number; fmtDat
         <div className="inline-flex items-center gap-[6px] bg-[#FFF7E6] text-[#B47B12] px-3 py-[6px] rounded-[9px] font-display font-semibold text-[12px]">
           <Icon name="bolt" size={14} />
           {SYSTEM_TYPE_LABEL[r.systemType]}
+        </div>
+      )}
+      {r.goal && (
+        <div className="inline-flex items-center gap-[6px] bg-[#F2FAF5] text-[color:var(--success)] px-3 py-[6px] rounded-[9px] font-display font-semibold text-[12px]">
+          <Icon name="flag" size={14} />
+          {GOAL_LABEL[r.goal]}
         </div>
       )}
       <div className="text-right min-w-[84px]">

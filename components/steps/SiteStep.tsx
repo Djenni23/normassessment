@@ -18,6 +18,8 @@ import {
   type SystemTypeId,
 } from "@/lib/catalog";
 import { CURRENCIES, type SiteForm } from "@/lib/site";
+import { useT } from "../LangProvider";
+import type { DictKey } from "@/lib/i18n/types";
 
 type SiteUpdater = <K extends keyof SiteForm>(k: K, v: SiteForm[K]) => void;
 type RoofUpdater = <K extends keyof SiteForm["roof"]>(k: K, v: SiteForm["roof"][K]) => void;
@@ -38,43 +40,86 @@ export function SiteStep({
   onBack: () => void;
   onContinue: () => void;
 }) {
+  const t = useT();
   const disabled = !site.systemType || !site.installZone || !site.goal;
 
   return (
     <div className="anim-fadeUp max-w-[860px] mx-auto">
-      <StepLabel>Step 3 · Site & Objectives</StepLabel>
-      <H1>Tell us about the site</H1>
-      <Lede className="max-w-[620px]">
-        These details help us match the right modules, mounting, and inverters to your project.
-      </Lede>
+      <StepLabel>{t("site.step_label")}</StepLabel>
+      <H1>{t("site.title")}</H1>
+      <Lede className="max-w-[620px]">{t("site.subtitle")}</Lede>
 
       {/* ---- System type ---- */}
       <div className="bg-white border border-[color:var(--border)] rounded-[22px] shadow-[0_8px_28px_rgba(40,60,110,.07)] p-[26px] mb-5">
-        <Section icon="bolt" label="System type" />
+        <Section icon="bolt" label={t("site.section.system_type")} />
         <div className="grid gap-[12px] [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]">
           {SYSTEM_TYPES.map((s) => (
             <ChoiceCard
               key={s.id}
               selected={site.systemType === s.id}
               icon={s.icon}
-              title={s.label}
-              desc={s.desc}
+              title={t(`site.systype.${s.id}.label` as DictKey)}
+              desc={t(`site.systype.${s.id}.desc` as DictKey)}
               onClick={() => onChange("systemType", s.id as SystemTypeId)}
             />
           ))}
         </div>
       </div>
 
+      {/* ---- Power & energy needs (checklist section 3) ---- */}
+      <div className="bg-white border border-[color:var(--border)] rounded-[22px] shadow-[0_8px_28px_rgba(40,60,110,.07)] p-[26px] mb-5">
+        <Section icon="battery_charging_full" label={t("site.section.power_needs")} />
+        <p className="text-[13.5px] text-[color:var(--ink-faint)] -mt-2 mb-4">{t("site.power_intro")}</p>
+        <div className="grid gap-[15px] [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]">
+          <label className="block">
+            <span className={fieldLabel}>
+              <Icon name="battery_full" size={15} className="align-[-2px] text-[color:var(--brand-navy)]" /> {t("site.battery")}
+            </span>
+            <input
+              inputMode="decimal"
+              value={site.batteryCapacityKwh}
+              onChange={(e) => onChange("batteryCapacityKwh", e.target.value.replace(/[^0-9.]/g, ""))}
+              placeholder={t("site.battery_ph")}
+              className={fieldInput}
+            />
+          </label>
+          <label className="block">
+            <span className={fieldLabel}>
+              <Icon name="dialpad" size={15} className="align-[-2px] text-[color:var(--brand-navy)]" /> {t("site.inverter_count")}
+            </span>
+            <input
+              inputMode="numeric"
+              value={site.inverterCount}
+              onChange={(e) => onChange("inverterCount", e.target.value.replace(/[^0-9]/g, ""))}
+              placeholder={t("site.inverter_count_ph")}
+              className={fieldInput}
+            />
+          </label>
+          <label className="block">
+            <span className={fieldLabel}>
+              <Icon name="electrical_services" size={15} className="align-[-2px] text-[color:var(--brand-navy)]" /> {t("site.inverter_capacity")}
+            </span>
+            <input
+              inputMode="decimal"
+              value={site.inverterCapacityKw}
+              onChange={(e) => onChange("inverterCapacityKw", e.target.value.replace(/[^0-9.]/g, ""))}
+              placeholder={t("site.inverter_capacity_ph")}
+              className={fieldInput}
+            />
+          </label>
+        </div>
+      </div>
+
       {/* ---- Installation zone ---- */}
       <div className="bg-white border border-[color:var(--border)] rounded-[22px] shadow-[0_8px_28px_rgba(40,60,110,.07)] p-[26px] mb-5">
-        <Section icon="map" label="Installation zone" />
+        <Section icon="map" label={t("site.section.zone")} />
         <div className="grid gap-[12px] [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] mb-4">
           {INSTALL_ZONES.map((z) => (
             <ChoiceCard
               key={z.id}
               selected={site.installZone === z.id}
               icon={z.icon}
-              title={z.label}
+              title={t(`site.zone.${z.id}` as DictKey)}
               onClick={() => onChange("installZone", z.id as InstallZoneId)}
             />
           ))}
@@ -82,16 +127,16 @@ export function SiteStep({
 
         {site.installZone === "roof" && (
           <div className="anim-fadeUp-fast grid gap-[15px] [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] mt-4">
-            <Field label="Roof type">
+            <Field label={t("site.roof.type")}>
               <Pills
-                options={ROOF_TYPES.map((r) => ({ id: r.id, label: r.label }))}
+                options={ROOF_TYPES.map((r) => ({ id: r.id, label: t(`site.rooftype.${r.id}` as DictKey) }))}
                 value={site.roof.type}
                 onChange={(v) => onRoofChange("type", v as RoofTypeId)}
               />
             </Field>
-            <Field label="Material">
+            <Field label={t("site.roof.material")}>
               <Pills
-                options={ROOF_MATERIALS.map((r) => ({ id: r.id, label: r.label }))}
+                options={ROOF_MATERIALS.map((r) => ({ id: r.id, label: t(`site.mat.${r.id}` as DictKey) }))}
                 value={site.roof.material}
                 onChange={(v) => onRoofChange("material", v as RoofMaterialId)}
               />
@@ -99,14 +144,14 @@ export function SiteStep({
                 <input
                   value={site.roof.materialOther}
                   onChange={(e) => onRoofChange("materialOther", e.target.value)}
-                  placeholder="Specify…"
+                  placeholder={t("common.specify")}
                   className={`${fieldInput} mt-2`}
                 />
               )}
             </Field>
-            <Field label="Orientation">
+            <Field label={t("site.roof.orientation")}>
               <Pills
-                options={ORIENTATIONS.map((o) => ({ id: o.id, label: o.label }))}
+                options={ORIENTATIONS.map((o) => ({ id: o.id, label: t(`site.orient.${o.id}` as DictKey) }))}
                 value={site.roof.orientation}
                 onChange={(v) => onRoofChange("orientation", v as OrientationId)}
               />
@@ -114,18 +159,18 @@ export function SiteStep({
                 <input
                   value={site.roof.orientationOther}
                   onChange={(e) => onRoofChange("orientationOther", e.target.value)}
-                  placeholder="Specify…"
+                  placeholder={t("common.specify")}
                   className={`${fieldInput} mt-2`}
                 />
               )}
             </Field>
             <label className="block">
-              <span className={fieldLabel}>Tilt angle (°)</span>
+              <span className={fieldLabel}>{t("site.roof.tilt")}</span>
               <input
                 inputMode="numeric"
                 value={site.roof.tiltDeg}
                 onChange={(e) => onRoofChange("tiltDeg", e.target.value.replace(/[^0-9.]/g, ""))}
-                placeholder="e.g. 15"
+                placeholder={t("site.roof.tilt_ph")}
                 className={fieldInput}
               />
             </label>
@@ -135,18 +180,18 @@ export function SiteStep({
         {site.installZone === "ground" && (
           <div className="anim-fadeUp-fast grid gap-[15px] [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] mt-4">
             <label className="block">
-              <span className={fieldLabel}>Available surface (m²)</span>
+              <span className={fieldLabel}>{t("site.ground.surface")}</span>
               <input
                 inputMode="numeric"
                 value={site.ground.surfaceSqm}
                 onChange={(e) => onGroundChange("surfaceSqm", e.target.value.replace(/[^0-9.]/g, ""))}
-                placeholder="e.g. 120"
+                placeholder={t("site.ground.surface_ph")}
                 className={fieldInput}
               />
             </label>
-            <Field label="Soil nature">
+            <Field label={t("site.ground.soil")}>
               <Pills
-                options={SOILS.map((s) => ({ id: s.id, label: s.label }))}
+                options={SOILS.map((s) => ({ id: s.id, label: t(`site.soil.${s.id}` as DictKey) }))}
                 value={site.ground.soil}
                 onChange={(v) => onGroundChange("soil", v as SoilId)}
               />
@@ -154,7 +199,7 @@ export function SiteStep({
                 <input
                   value={site.ground.soilOther}
                   onChange={(e) => onGroundChange("soilOther", e.target.value)}
-                  placeholder="Specify…"
+                  placeholder={t("common.specify")}
                   className={`${fieldInput} mt-2`}
                 />
               )}
@@ -165,36 +210,36 @@ export function SiteStep({
 
       {/* ---- Goal ---- */}
       <div className="bg-white border border-[color:var(--border)] rounded-[22px] shadow-[0_8px_28px_rgba(40,60,110,.07)] p-[26px] mb-5">
-        <Section icon="flag" label="What's your goal?" />
+        <Section icon="flag" label={t("site.section.goal")} />
         <div className="grid gap-[12px] [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
           {GOALS.map((g) => (
             <ChoiceCard
               key={g.id}
               selected={site.goal === g.id}
               icon={g.icon}
-              title={g.label}
-              desc={g.desc}
+              title={t(`site.goal.${g.id}.label` as DictKey)}
+              desc={t(`site.goal.${g.id}.desc` as DictKey)}
               onClick={() => onChange("goal", g.id as GoalId)}
             />
           ))}
         </div>
       </div>
 
-      {/* ---- Extras (creative additions: monthly bill, brand, timeline, notes) ---- */}
+      {/* ---- Extras ---- */}
       <div className="bg-white border border-[color:var(--border)] rounded-[22px] shadow-[0_8px_28px_rgba(40,60,110,.07)] p-[26px] mb-5">
-        <Section icon="more_horiz" label="Extra context (optional)" />
+        <Section icon="more_horiz" label={t("site.section.extras")} />
 
         <div className="grid gap-[15px] [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
           <label className="block">
             <span className={fieldLabel}>
-              <Icon name="receipt_long" size={15} className="align-[-2px] text-[color:var(--brand-amber)]" /> Monthly electricity bill
+              <Icon name="receipt_long" size={15} className="align-[-2px] text-[color:var(--brand-amber)]" /> {t("site.extras.monthly_bill")}
             </span>
             <div className="flex gap-2">
               <input
                 inputMode="numeric"
                 value={site.monthlyBill}
                 onChange={(e) => onChange("monthlyBill", e.target.value.replace(/[^0-9.]/g, ""))}
-                placeholder="e.g. 45000"
+                placeholder={t("site.extras.monthly_bill_ph")}
                 className={`${fieldInput} flex-1`}
               />
               <select
@@ -207,35 +252,35 @@ export function SiteStep({
                 ))}
               </select>
             </div>
-            <span className="text-[11.5px] text-[color:var(--ink-faint)] mt-1 block">We&apos;ll estimate your annual savings and payback period.</span>
+            <span className="text-[11.5px] text-[color:var(--ink-faint)] mt-1 block">{t("site.extras.bill_hint")}</span>
           </label>
 
           <label className="block">
-            <span className={fieldLabel}>Preferred module brand / type</span>
+            <span className={fieldLabel}>{t("site.extras.module_brand")}</span>
             <input
               value={site.moduleBrand}
               onChange={(e) => onChange("moduleBrand", e.target.value)}
-              placeholder="e.g. Canadian Solar, Jinko, no preference…"
+              placeholder={t("site.extras.module_brand_ph")}
               className={fieldInput}
             />
           </label>
 
           <label className="block">
-            <span className={fieldLabel}>Delivery / project timeline</span>
+            <span className={fieldLabel}>{t("site.extras.timeline")}</span>
             <input
               value={site.timeline}
               onChange={(e) => onChange("timeline", e.target.value)}
-              placeholder="e.g. within 2 months, by Q3 2026"
+              placeholder={t("site.extras.timeline_ph")}
               className={fieldInput}
             />
           </label>
 
           <label className="block sm:col-span-2" style={{ gridColumn: "1/-1" }}>
-            <span className={fieldLabel}>Notes / remarks</span>
+            <span className={fieldLabel}>{t("site.extras.notes")}</span>
             <textarea
               value={site.notes}
               onChange={(e) => onChange("notes", e.target.value)}
-              placeholder="Anything else our team should know…"
+              placeholder={t("site.extras.notes_ph")}
               rows={3}
               className={`${fieldInput} resize-y min-h-[88px]`}
             />
@@ -246,16 +291,16 @@ export function SiteStep({
       <div className="flex items-center justify-between gap-[14px] flex-wrap mt-[26px]">
         <BackButton onClick={onBack}>
           <Icon name="arrow_back" size={20} />
-          Back
+          {t("common.back")}
         </BackButton>
         <div className="flex items-center gap-4">
           {disabled && (
             <span className="text-[13.5px] text-[color:var(--ink-faint)] font-semibold">
-              Pick system type, zone &amp; goal to continue
+              {t("site.disabled_hint")}
             </span>
           )}
           <PrimaryButton onClick={onContinue} disabled={disabled}>
-            Continue
+            {t("common.continue")}
             <Icon name="arrow_forward" size={20} />
           </PrimaryButton>
         </div>

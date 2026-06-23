@@ -3,6 +3,8 @@ import { Icon } from "../Icon";
 import { StepLabel, H1, Lede } from "../ui";
 import { CATALOG, TYPES, type ProjectTypeId } from "@/lib/catalog";
 import { calc, fmt, type Settings } from "@/lib/calc";
+import { useT } from "../LangProvider";
+import type { DictKey } from "@/lib/i18n/types";
 
 export type Equipment = Record<string, { qty: number; hours?: number }>;
 
@@ -25,15 +27,17 @@ export function AssessStep({
   onBack: () => void;
   onContinue: () => void;
 }) {
+  const t = useT();
   const c = calc(equipment, settings);
-  const typeLabel = TYPES.find((t) => t.id === projectType)?.label ?? "—";
+  const tp = TYPES.find((x) => x.id === projectType);
+  const typeLabel = tp ? t(`type.${tp.id}.label` as DictKey) : "—";
   const disabled = c.count === 0;
 
   return (
     <div className="anim-fadeUp">
-      <StepLabel>Step 3 · Assessment</StepLabel>
-      <H1>Build your energy profile</H1>
-      <Lede className="max-w-[620px]">Tap to add the equipment you use. Adjust the daily usage hours — your estimate updates live on the right.</Lede>
+      <StepLabel>{t("assess.step_label")}</StepLabel>
+      <H1>{t("assess.title")}</H1>
+      <Lede className="max-w-[620px]">{t("assess.subtitle")}</Lede>
 
       <div className="flex flex-wrap gap-[22px] items-start">
         <div className="flex-1 basis-[540px] min-w-[300px]">
@@ -66,7 +70,7 @@ export function AssessStep({
                       <Icon name={a.icon} size={23} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-display font-bold text-[15px] text-[color:var(--ink)] leading-[1.15]">{a.label}</div>
+                      <div className="font-display font-bold text-[15px] text-[color:var(--ink)] leading-[1.15]">{t(`appliance.${a.id}` as DictKey)}</div>
                       <div className="font-mono font-medium text-[11px] text-[color:var(--ink-ghost)]">{wattLabel}</div>
                     </div>
                   </div>
@@ -94,7 +98,7 @@ export function AssessStep({
                   {active && (
                     <div className="anim-fadeUp-fast mt-[13px] pt-[12px] border-t border-dashed border-[#E3E9F2]">
                       <div className="flex justify-between items-baseline mb-[5px]">
-                        <span className="text-[11.5px] text-[color:var(--ink-faint)] font-semibold">Hours / day</span>
+                        <span className="text-[11.5px] text-[color:var(--ink-faint)] font-semibold">{t("assess.hours_per_day")}</span>
                         <span className="font-display font-bold text-[13px] text-[color:var(--brand-navy)]">{hours}h</span>
                       </div>
                       <input
@@ -107,7 +111,7 @@ export function AssessStep({
                       />
                       <div className="mt-[9px] inline-flex items-center gap-[5px] bg-[#FFF7E6] border border-[#F6E2B0] rounded-[8px] px-[9px] py-[3px] font-mono font-semibold text-[11.5px] text-[#B47B12]">
                         <Icon name="bolt" size={14} />
-                        {contribution} kWh/day
+                        {contribution} {t("assess.kwh_per_day")}
                       </div>
                     </div>
                   )}
@@ -123,25 +127,25 @@ export function AssessStep({
             style={{ background: "linear-gradient(160deg,#35508E 0%,#2A3F73 100%)" }}
           >
             <div className="absolute w-[180px] h-[180px] rounded-full -top-[60px] -right-[50px]" style={{ background: "radial-gradient(circle,rgba(244,177,42,.32),transparent 70%)" }} />
-            <div className="font-mono font-medium text-[11px] tracking-[2px] uppercase text-[#B9C6E6] relative">Live estimate</div>
+            <div className="font-mono font-medium text-[11px] tracking-[2px] uppercase text-[#B9C6E6] relative">{t("assess.live_estimate")}</div>
             <div className="flex items-end gap-[10px] mt-[14px] relative">
               <div className="w-[50px] h-[50px] rounded-[14px] flex items-center justify-center anim-floaty" style={{ background: "rgba(244,177,42,.18)" }}>
                 <Icon name="solar_power" size={30} className="text-[color:var(--brand-amber)]" />
               </div>
               <div>
                 <div className="font-display font-extrabold text-[38px] leading-[.9] tracking-[-1px]">{fmt(c.pv, 1)}</div>
-                <div className="text-[12px] text-[#B9C6E6] font-semibold mt-[3px]">kWp recommended system</div>
+                <div className="text-[12px] text-[#B9C6E6] font-semibold mt-[3px]">{t("assess.kwp_recommended")}</div>
               </div>
             </div>
             <div className="h-px bg-white/15 my-5 relative" />
             <div className="flex flex-col gap-[13px] relative">
-              <SummaryRow icon="battery_charging_full" label="Daily consumption" value={`${fmt(c.daily, 1)} kWh`} />
-              <SummaryRow icon="speed" label="Peak load" value={`${fmt(Math.round(c.peak), 0)} W`} />
-              <SummaryRow icon="inventory_2" label="Equipment items" value={String(c.count)} />
+              <SummaryRow icon="battery_charging_full" label={t("assess.daily_consumption")} value={`${fmt(c.daily, 1)} kWh`} />
+              <SummaryRow icon="speed" label={t("assess.peak_load")} value={`${fmt(Math.round(c.peak), 0)} W`} />
+              <SummaryRow icon="inventory_2" label={t("assess.equipment_items")} value={String(c.count)} />
               <div className="flex items-center justify-between">
                 <span className="text-[13.5px] text-[#C7D2EA] flex items-center gap-2">
                   <Icon name="category" size={18} className="text-[#8FA4D0]" />
-                  Project type
+                  {t("assess.project_type")}
                 </span>
                 <span className="font-display font-bold text-[14px] bg-[rgba(244,177,42,.16)] text-[#F8CB6A] px-[11px] py-[3px] rounded-[20px]">{typeLabel}</span>
               </div>
@@ -157,11 +161,11 @@ export function AssessStep({
                 cursor: disabled ? "not-allowed" : "pointer",
               }}
             >
-              See my recommendation
+              {t("assess.cta")}
               <Icon name="arrow_forward" size={20} />
             </button>
             {disabled && (
-              <div className="text-center text-[12px] text-[#9FB0D6] mt-[10px]">Add at least one equipment item to continue</div>
+              <div className="text-center text-[12px] text-[#9FB0D6] mt-[10px]">{t("assess.cta_disabled")}</div>
             )}
           </div>
           <button
@@ -169,7 +173,7 @@ export function AssessStep({
             className="w-full mt-3 bg-transparent border-0 text-[color:var(--ink-muted)] font-semibold text-[14px] py-[10px] cursor-pointer flex items-center justify-center gap-[6px] hover:text-[color:var(--brand-navy)]"
           >
             <Icon name="arrow_back" size={18} />
-            Back to details
+            {t("assess.back_to_details")}
           </button>
         </aside>
       </div>

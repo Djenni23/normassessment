@@ -13,12 +13,16 @@ import {
   CATALOG,
 } from "@/lib/catalog";
 import { ChecklistActions } from "@/components/staff/ChecklistActions";
+import { StatusEditor } from "@/components/staff/StatusEditor";
 
 export const dynamic = "force-dynamic";
 
 type SiteDoc = {
   systemType: string | null;
   installZone: string | null;
+  batteryCapacityKwh?: number | null;
+  inverterCount?: number | null;
+  inverterCapacityKw?: number | null;
   roof?: { type?: string | null; material?: string | null; materialOther?: string; orientation?: string | null; orientationOther?: string; tiltDeg?: number | null };
   ground?: { surfaceSqm?: number | null; soil?: string | null; soilOther?: string };
   goal: string | null;
@@ -68,12 +72,15 @@ export default async function ChecklistPage({ params }: { params: Promise<{ ref:
   return (
     <div className="min-h-screen bg-[#EAEEF4] print:bg-white">
       <div className="max-w-[820px] mx-auto px-6 py-8 print:p-0">
-        <div className="flex items-center justify-between mb-6 print:hidden">
+        <div className="flex items-center justify-between mb-4 print:hidden">
           <Link href="/staff" className="inline-flex items-center gap-2 text-[14px] text-[color:var(--ink-muted)] hover:text-[color:var(--brand-navy)] font-semibold">
             <span className="material-symbols" style={{ fontSize: 18 }}>arrow_back</span>
             Back to dashboard
           </Link>
           <ChecklistActions />
+        </div>
+        <div className="mb-5 print:hidden">
+          <StatusEditor id={a._id} initial={(a.status as "New" | "In Review" | "Quoted") || "New"} />
         </div>
 
         <article className="bg-white border border-[color:var(--border)] rounded-[18px] p-10 shadow-[0_8px_28px_rgba(40,60,110,.06)] print:shadow-none print:border-0 print:rounded-none print:p-0">
@@ -127,7 +134,24 @@ export default async function ChecklistPage({ params }: { params: Promise<{ ref:
           <Sec title="3. Power & energy needs">
             <Row label="Recommended system capacity" value={`${fmt(a.computed.pv, 1)} kWp`} />
             <Row label="Average daily consumption" value={`${fmt(a.computed.daily, 1)} kWh`} />
-            <Row label="Requested battery capacity" value={`${fmt(a.computed.batt, 1)} kWh`} />
+            <Row
+              label="Requested battery capacity"
+              value={
+                site?.batteryCapacityKwh != null
+                  ? `${fmt(site.batteryCapacityKwh, 1)} kWh (customer)  ·  recommended ${fmt(a.computed.batt, 1)} kWh`
+                  : `${fmt(a.computed.batt, 1)} kWh (recommended)`
+              }
+            />
+            <Row
+              label="Inverters (requested)"
+              value={
+                site?.inverterCount && site?.inverterCapacityKw
+                  ? `${site.inverterCount} × ${fmt(site.inverterCapacityKw, 1)} kW`
+                  : site?.inverterCount
+                    ? `${site.inverterCount} (capacity unspecified)`
+                    : "—"
+              }
+            />
             <Row label="Estimated panels" value={`${a.computed.panels} panels`} />
             <Row label="Peak load" value={`${fmt(Math.round(a.computed.peak), 0)} W`} />
             <Row label="Equipment items" value={String(a.computed.count)} />

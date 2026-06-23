@@ -26,9 +26,15 @@ function sanitizeSite(raw: unknown) {
   const roof = (s.roof ?? {}) as Record<string, unknown>;
   const ground = (s.ground ?? {}) as Record<string, unknown>;
   const bill = numStr(s.monthlyBill);
+  const batt = numStr(s.batteryCapacityKwh);
+  const invCount = numStr(s.inverterCount);
+  const invCapacity = numStr(s.inverterCapacityKw);
   return {
     systemType: oneOf(ID_SETS.systemType, s.systemType),
     installZone: oneOf(ID_SETS.installZone, s.installZone),
+    batteryCapacityKwh: batt != null && batt > 0 ? batt : null,
+    inverterCount: invCount != null && invCount > 0 ? Math.floor(invCount) : null,
+    inverterCapacityKw: invCapacity != null && invCapacity > 0 ? invCapacity : null,
     roof: {
       type: oneOf(ID_SETS.roofType, roof.type),
       material: oneOf(ID_SETS.roofMaterial, roof.material),
