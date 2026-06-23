@@ -1,65 +1,218 @@
-import Image from "next/image";
+"use client";
+import { useEffect, useReducer, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Header, type Screen } from "@/components/Header";
+import { TypeStep } from "@/components/steps/TypeStep";
+import { InfoStep, type ContactForm } from "@/components/steps/InfoStep";
+import { AssessStep, type Equipment } from "@/components/steps/AssessStep";
+import { ResultsStep } from "@/components/steps/ResultsStep";
+import { SubmitStep, type SubmittedRecord } from "@/components/steps/SubmitStep";
+import { PRESETS, type ProjectTypeId, TYPES, CATALOG } from "@/lib/catalog";
+import { DEFAULT_SETTINGS, type Settings } from "@/lib/calc";
+
+type State = {
+  screen: Screen;
+  projectType: ProjectTypeId | null;
+  form: ContactForm;
+  equipment: Equipment;
+  infoError: boolean;
+  submitted: SubmittedRecord | null;
+};
+
+const initial: State = {
+  screen: "type",
+  projectType: null,
+  form: { name: "", phone: "", whatsapp: "", email: "", country: "", city: "", address: "" },
+  equipment: {},
+  infoError: false,
+  submitted: null,
+};
+
+type Action =
+  | { type: "GO"; screen: Screen }
+  | { type: "BACK" }
+  | { type: "SELECT_TYPE"; id: ProjectTypeId }
+  | { type: "SET_FIELD"; k: keyof ContactForm; v: string }
+  | { type: "INC"; id: string }
+  | { type: "DEC"; id: string }
+  | { type: "HOURS"; id: string; h: number }
+  | { type: "INFO_ERROR" }
+  | { type: "SUBMITTED"; record: SubmittedRecord }
+  | { type: "RESTART" };
+
+const ORDER: Screen[] = ["type", "info", "assess", "results"];
+
+function reducer(s: State, a: Action): State {
+  switch (a.type) {
+    case "GO":
+      return { ...s, screen: a.screen };
+    case "BACK": {
+      const i = ORDER.indexOf(s.screen);
+      return { ...s, screen: i > 0 ? ORDER[i - 1] : "type" };
+    }
+    case "SELECT_TYPE": {
+      const preset = PRESETS[a.id] ?? {};
+      const equipment: Equipment = {};
+      for (const [k, qty] of Object.entries(preset)) equipment[k] = { qty };
+      return { ...s, projectType: a.id, equipment };
+    }
+    case "SET_FIELD":
+      return { ...s, form: { ...s.form, [a.k]: a.v }, infoError: false };
+    case "INC": {
+      const cur = s.equipment[a.id]?.qty ?? 0;
+      return { ...s, equipment: { ...s.equipment, [a.id]: { ...(s.equipment[a.id] ?? {}), qty: cur + 1 } } };
+    }
+    case "DEC": {
+      const cur = s.equipment[a.id]?.qty ?? 0;
+      return { ...s, equipment: { ...s.equipment, [a.id]: { ...(s.equipment[a.id] ?? {}), qty: Math.max(0, cur - 1) } } };
+    }
+    case "HOURS":
+      return { ...s, equipment: { ...s.equipment, [a.id]: { ...(s.equipment[a.id] ?? { qty: 0 }), hours: a.h } } };
+    case "INFO_ERROR":
+      return { ...s, infoError: true };
+    case "SUBMITTED":
+      return { ...s, submitted: a.record, screen: "submit" };
+    case "RESTART":
+      return initial;
+    default:
+      return s;
+  }
+}
 
 export default function Home() {
+  const router = useRouter();
+  const [state, dispatch] = useReducer(reducer, initial);
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d && typeof d.peakSunHours === "number") setSettings(d);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    try {
+      document.scrollingElement?.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    } catch {}
+  }, [state.screen]);
+
+  const goBack = () => dispatch({ type: "BACK" });
+  const go = (screen: Screen) => dispatch({ type: "GO", screen });
+
+  const onContinueInfo = () => {
+    const f = state.form;
+    if (!f.name.trim() || !f.phone.trim() || !f.country) {
+      dispatch({ type: "INFO_ERROR" });
+      return;
+    }
+    go("assess");
+  };
+
+  const onSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/assessments", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          projectType: state.projectType,
+          contact: {
+            name: state.form.name,
+            phone: state.form.phone,
+            whatsapp: state.form.whatsapp,
+            email: state.form.email,
+          },
+          location: {
+            country: state.form.country,
+            city: state.form.city,
+            address: state.form.address,
+          },
+          equipment: state.equipment,
+        }),
+      });
+      if (!res.ok) throw new Error("submit failed");
+      const data = await res.json();
+      const t = TYPES.find((x) => x.id === state.projectType);
+      dispatch({
+        type: "SUBMITTED",
+        record: {
+          ref: data.ref,
+          name: state.form.name.trim() || "New Customer",
+          type: t?.label ?? "House",
+          size: `${data.computed.pv.toFixed(1)} kWp`,
+          daily: data.computed.daily.toFixed(1),
+          panels: data.computed.panels,
+        },
+      });
+    } catch {
+      setSubmitting(false);
+      alert("Could not submit. Make sure MongoDB is running.");
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <>
+      <Header
+        screen={state.screen}
+        onHome={() => dispatch({ type: "RESTART" })}
+        staffHref="/staff"
+        staffLabel="Staff"
+        staffIcon="dashboard"
+      />
+      <main className="flex-1 w-full max-w-[1200px] mx-auto px-[22px] pt-[30px] pb-16">
+        {state.screen === "type" && (
+          <TypeStep
+            selected={state.projectType}
+            onSelect={(id) => dispatch({ type: "SELECT_TYPE", id })}
+            onContinue={() => state.projectType && go("info")}
+          />
+        )}
+        {state.screen === "info" && (
+          <InfoStep
+            form={state.form}
+            onChange={(k, v) => dispatch({ type: "SET_FIELD", k, v })}
+            onBack={goBack}
+            onContinue={onContinueInfo}
+            error={state.infoError}
+          />
+        )}
+        {state.screen === "assess" && (
+          <AssessStep
+            equipment={state.equipment}
+            projectType={state.projectType}
+            settings={settings}
+            onInc={(id) => dispatch({ type: "INC", id })}
+            onDec={(id) => dispatch({ type: "DEC", id })}
+            onHours={(id, h) => dispatch({ type: "HOURS", id, h })}
+            onBack={goBack}
+            onContinue={() => {
+              const hasItems = CATALOG.some((a) => (state.equipment[a.id]?.qty ?? 0) > 0);
+              if (hasItems) go("results");
+            }}
+          />
+        )}
+        {state.screen === "results" && (
+          <ResultsStep
+            equipment={state.equipment}
+            projectType={state.projectType}
+            settings={settings}
+            onBack={goBack}
+            onSubmit={onSubmit}
+          />
+        )}
+        {state.screen === "submit" && state.submitted && (
+          <SubmitStep
+            submitted={state.submitted}
+            onRestart={() => dispatch({ type: "RESTART" })}
+            onStaff={() => router.push("/staff")}
+          />
+        )}
       </main>
-    </div>
+    </>
   );
 }
