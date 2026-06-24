@@ -96,10 +96,17 @@ export async function POST(req: Request) {
   const computed = calc(equipment, settings);
   const site = sanitizeSite(body.site);
 
+  const customTypeLabel = str(body.customTypeLabel, 80);
+  if (projectType === "other" && !customTypeLabel) {
+    return NextResponse.json({ error: "customTypeLabel required for projectType=other" }, { status: 400 });
+  }
+  const typeLabel = projectType === "other" ? customTypeLabel : t.label;
+
   const ref = genRef();
   const doc = {
     ref,
     projectType,
+    customTypeLabel: projectType === "other" ? customTypeLabel : "",
     projectName: str(body.projectName, 200),
     contact: {
       name: String(contact.name).trim(),
@@ -115,7 +122,7 @@ export async function POST(req: Request) {
     equipment,
     site,
     computed,
-    typeLabel: t.label,
+    typeLabel,
     typeIcon: t.icon,
     cat: t.cat,
     status: "New" as const,

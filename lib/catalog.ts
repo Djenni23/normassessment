@@ -4,7 +4,8 @@ export type ProjectTypeId =
   | "office"
   | "school"
   | "farm"
-  | "irrigation";
+  | "irrigation"
+  | "other";
 
 export type ProjectCategory = "Residential" | "Commercial" | "Agricultural";
 
@@ -23,6 +24,7 @@ export const TYPES: ProjectType[] = [
   { id: "school", label: "School", icon: "school", desc: "Education facility", cat: "Commercial" },
   { id: "farm", label: "Farm", icon: "agriculture", desc: "Agricultural site", cat: "Agricultural" },
   { id: "irrigation", label: "Solar Irrigation", icon: "water_drop", desc: "Pumping & irrigation", cat: "Agricultural" },
+  { id: "other", label: "Other", icon: "category", desc: "Tell us your project", cat: "Residential" },
 ];
 
 export type Appliance = {
@@ -66,6 +68,7 @@ export const PRESETS: Record<ProjectTypeId, Record<string, number>> = {
   school: { lights: 20, computer: 8, fan: 6, internet: 1, camera: 2 },
   farm: { lights: 6, pump: 1, fridge: 1, fan: 2 },
   irrigation: { pump: 2, lights: 2 },
+  other: {},
 };
 
 export const CATEGORY_ICON: Record<ProjectCategory, string> = {

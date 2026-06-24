@@ -35,6 +35,7 @@ export type DictKey =
   | "type.school.label" | "type.school.desc"
   | "type.farm.label" | "type.farm.desc"
   | "type.irrigation.label" | "type.irrigation.desc"
+  | "type.other.label" | "type.other.desc" | "type.other.ph" | "type.other.hint"
   // InfoStep
   | "info.step_label"
   | "info.title"

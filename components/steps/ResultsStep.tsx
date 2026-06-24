@@ -12,6 +12,7 @@ import type { DictKey } from "@/lib/i18n/types";
 export function ResultsStep({
   equipment,
   projectType,
+  customTypeLabel,
   settings,
   site,
   onBack,
@@ -19,6 +20,7 @@ export function ResultsStep({
 }: {
   equipment: Equipment;
   projectType: ProjectTypeId | null;
+  customTypeLabel?: string;
   settings: Settings;
   site?: SiteForm;
   onBack: () => void;
@@ -29,7 +31,12 @@ export function ResultsStep({
   const projType = TYPES.find((x) => x.id === projectType);
   const category = projType?.cat ?? "Residential";
   const catIcon = CATEGORY_ICON[category];
-  const projLabel = projType ? t(`type.${projType.id}.label` as DictKey) : "—";
+  const projLabel =
+    projectType === "other" && customTypeLabel?.trim()
+      ? customTypeLabel.trim()
+      : projType
+        ? t(`type.${projType.id}.label` as DictKey)
+        : "—";
 
   // anim
   const [anim, setAnim] = useState({ daily: 0, pv: 0, batt: 0, panels: 0 });

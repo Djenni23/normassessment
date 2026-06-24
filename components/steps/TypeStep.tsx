@@ -1,20 +1,27 @@
 "use client";
 import { Icon } from "../Icon";
-import { StepLabel, H1, Lede, PrimaryButton } from "../ui";
+import { StepLabel, H1, Lede, PrimaryButton, fieldInput, fieldLabel } from "../ui";
 import { TYPES, type ProjectTypeId } from "@/lib/catalog";
 import { useT } from "../LangProvider";
 import type { DictKey } from "@/lib/i18n/types";
 
 export function TypeStep({
   selected,
+  customLabel,
   onSelect,
+  onCustomLabel,
   onContinue,
 }: {
   selected: ProjectTypeId | null;
+  customLabel: string;
   onSelect: (id: ProjectTypeId) => void;
+  onCustomLabel: (v: string) => void;
   onContinue: () => void;
 }) {
   const t = useT();
+  const otherSelected = selected === "other";
+  const disabled = !selected || (otherSelected && !customLabel.trim());
+
   return (
     <div className="anim-fadeUp">
       <StepLabel>{t("type.step_label")}</StepLabel>
@@ -62,8 +69,24 @@ export function TypeStep({
         })}
       </div>
 
+      {otherSelected && (
+        <div className="anim-fadeUp-fast mt-5 bg-white border border-[color:var(--border)] rounded-[18px] shadow-[0_8px_24px_rgba(40,60,110,.07)] p-5 max-w-[520px]">
+          <div className="flex items-center gap-2 mb-2">
+            <Icon name="edit_note" size={20} className="text-[color:var(--brand-navy)]" />
+            <span className={fieldLabel} style={{ marginBottom: 0 }}>{t("type.other.hint")}</span>
+          </div>
+          <input
+            autoFocus
+            value={customLabel}
+            onChange={(e) => onCustomLabel(e.target.value.slice(0, 80))}
+            placeholder={t("type.other.ph")}
+            className={fieldInput}
+          />
+        </div>
+      )}
+
       <div className="flex justify-end mt-7">
-        <PrimaryButton onClick={onContinue} disabled={!selected}>
+        <PrimaryButton onClick={onContinue} disabled={disabled}>
           {t("common.continue")}
           <Icon name="arrow_forward" size={20} />
         </PrimaryButton>

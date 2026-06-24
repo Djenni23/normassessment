@@ -15,6 +15,7 @@ import { EMPTY_SITE, type SiteForm } from "@/lib/site";
 type State = {
   screen: Screen;
   projectType: ProjectTypeId | null;
+  customTypeLabel: string;
   form: ContactForm;
   site: SiteForm;
   equipment: Equipment;
@@ -25,6 +26,7 @@ type State = {
 const initial: State = {
   screen: "type",
   projectType: null,
+  customTypeLabel: "",
   form: { projectName: "", name: "", phone: "", whatsapp: "", email: "", country: "", city: "", address: "" },
   site: EMPTY_SITE,
   equipment: {},
@@ -36,6 +38,7 @@ type Action =
   | { type: "GO"; screen: Screen }
   | { type: "BACK" }
   | { type: "SELECT_TYPE"; id: ProjectTypeId }
+  | { type: "SET_CUSTOM_TYPE_LABEL"; v: string }
   | { type: "SET_FIELD"; k: keyof ContactForm; v: string }
   | { type: "SET_SITE"; k: keyof SiteForm; v: SiteForm[keyof SiteForm] }
   | { type: "SET_ROOF"; k: keyof SiteForm["roof"]; v: SiteForm["roof"][keyof SiteForm["roof"]] }
@@ -61,8 +64,11 @@ function reducer(s: State, a: Action): State {
       const preset = PRESETS[a.id] ?? {};
       const equipment: Equipment = {};
       for (const [k, qty] of Object.entries(preset)) equipment[k] = { qty };
-      return { ...s, projectType: a.id, equipment };
+      const customTypeLabel = a.id === "other" ? s.customTypeLabel : "";
+      return { ...s, projectType: a.id, equipment, customTypeLabel };
     }
+    case "SET_CUSTOM_TYPE_LABEL":
+      return { ...s, customTypeLabel: a.v };
     case "SET_FIELD":
       return { ...s, form: { ...s.form, [a.k]: a.v }, infoError: false };
     case "SET_SITE":
@@ -134,6 +140,7 @@ export default function Home() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           projectType: state.projectType,
+          customTypeLabel: state.customTypeLabel,
           projectName: state.form.projectName,
           contact: {
             name: state.form.name,
@@ -153,12 +160,16 @@ export default function Home() {
       if (!res.ok) throw new Error("submit failed");
       const data = await res.json();
       const t = TYPES.find((x) => x.id === state.projectType);
+      const fallbackTypeLabel =
+        state.projectType === "other" && state.customTypeLabel.trim()
+          ? state.customTypeLabel.trim()
+          : t?.label ?? "House";
       dispatch({
         type: "SUBMITTED",
         record: {
           ref: data.ref,
           name: state.form.name.trim() || "New Customer",
-          type: t?.label ?? "House",
+          type: fallbackTypeLabel,
           size: `${data.computed.pv.toFixed(1)} kWp`,
           daily: data.computed.daily.toFixed(1),
           panels: data.computed.panels,
@@ -182,8 +193,14 @@ export default function Home() {
         {state.screen === "type" && (
           <TypeStep
             selected={state.projectType}
+            customLabel={state.customTypeLabel}
             onSelect={(id) => dispatch({ type: "SELECT_TYPE", id })}
-            onContinue={() => state.projectType && go("info")}
+            onCustomLabel={(v) => dispatch({ type: "SET_CUSTOM_TYPE_LABEL", v })}
+            onContinue={() => {
+              if (!state.projectType) return;
+              if (state.projectType === "other" && !state.customTypeLabel.trim()) return;
+              go("info");
+            }}
           />
         )}
         {state.screen === "info" && (
@@ -224,6 +241,7 @@ export default function Home() {
           <ResultsStep
             equipment={state.equipment}
             projectType={state.projectType}
+            customTypeLabel={state.customTypeLabel}
             settings={settings}
             site={state.site}
             onBack={goBack}

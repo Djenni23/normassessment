@@ -38,9 +38,25 @@ export function InfoStep({
   error: boolean;
 }) {
   const t = useT();
+  const sanitizeName = (v: string) => v.replace(/[0-9_]/g, "");
+
+  const formatPhone = (raw: string): string => {
+    const hasPlus = raw.startsWith("+");
+    const digits = raw.replace(/\D/g, "");
+    if (!digits) return hasPlus ? "+" : "";
+    const parts: string[] = [digits.slice(0, 3)];
+    for (let i = 3; i < digits.length; i += 2) parts.push(digits.slice(i, i + 2));
+    return (hasPlus ? "+" : "") + parts.filter(Boolean).join(" ");
+  };
+
   const bind = (k: keyof ContactForm) => ({
     value: form[k],
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => onChange(k, e.target.value),
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      let v = e.target.value;
+      if (k === "name") v = sanitizeName(v);
+      else if (k === "phone" || k === "whatsapp") v = formatPhone(v);
+      onChange(k, v);
+    },
   });
   return (
     <div className="anim-fadeUp max-w-[760px] mx-auto">
@@ -74,13 +90,13 @@ export function InfoStep({
             <span className={fieldLabel}>
               {t("info.phone")} <span className="text-[color:var(--danger)]">*</span>
             </span>
-            <input {...bind("phone")} placeholder={t("info.phone_ph")} className={fieldInput} />
+            <input {...bind("phone")} type="tel" inputMode="numeric" placeholder={t("info.phone_ph")} className={fieldInput} />
           </label>
           <label className="block">
             <span className={fieldLabel}>
               <Icon name="chat" size={15} className="align-[-2px] text-[color:var(--success)]" /> {t("info.whatsapp")}
             </span>
-            <input {...bind("whatsapp")} placeholder={t("info.whatsapp_ph")} className={fieldInput} />
+            <input {...bind("whatsapp")} type="tel" inputMode="numeric" placeholder={t("info.whatsapp_ph")} className={fieldInput} />
           </label>
           <label className="block">
             <span className={fieldLabel}>{t("info.email")}</span>
