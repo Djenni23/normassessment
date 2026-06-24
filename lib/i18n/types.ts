@@ -20,6 +20,7 @@ export type DictKey =
   // Common
   | "common.back"
   | "common.continue"
+  | "common.cancel"
   | "common.required"
   | "common.specify"
   // TypeStep
@@ -49,7 +50,7 @@ export type DictKey =
   | "info.phone" | "info.phone_ph"
   | "info.whatsapp" | "info.whatsapp_ph"
   | "info.email" | "info.email_ph"
-  | "info.country" | "info.country_ph"
+  | "info.country" | "info.country_ph" | "info.country_other_ph"
   | "info.city" | "info.city_ph"
   | "info.address" | "info.address_ph"
   | "info.error_missing"
@@ -99,6 +100,10 @@ export type DictKey =
   | "assess.cta"
   | "assess.cta_disabled"
   | "assess.back_to_details"
+  | "assess.custom.add_btn" | "assess.custom.add_title"
+  | "assess.custom.name" | "assess.custom.name_ph"
+  | "assess.custom.watts" | "assess.custom.watts_ph"
+  | "assess.custom.confirm"
   | "appliance.lights" | "appliance.tv" | "appliance.fridge" | "appliance.freezer"
   | "appliance.ac" | "appliance.fan" | "appliance.computer" | "appliance.pump"
   | "appliance.internet" | "appliance.camera" | "appliance.other"

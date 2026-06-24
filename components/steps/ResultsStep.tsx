@@ -5,12 +5,13 @@ import { StepLabel, H1, Lede, PrimaryButton, BackButton } from "../ui";
 import { CATALOG, CATEGORY_ICON, COLORS, TYPES, type ProjectTypeId } from "@/lib/catalog";
 import { calc, fmt, type Settings } from "@/lib/calc";
 import type { SiteForm } from "@/lib/site";
-import type { Equipment } from "./AssessStep";
+import type { CustomAppliance, Equipment } from "./AssessStep";
 import { useT } from "../LangProvider";
 import type { DictKey } from "@/lib/i18n/types";
 
 export function ResultsStep({
   equipment,
+  customAppliances = [],
   projectType,
   customTypeLabel,
   settings,
@@ -19,6 +20,7 @@ export function ResultsStep({
   onSubmit,
 }: {
   equipment: Equipment;
+  customAppliances?: CustomAppliance[];
   projectType: ProjectTypeId | null;
   customTypeLabel?: string;
   settings: Settings;
@@ -27,7 +29,8 @@ export function ResultsStep({
   onSubmit: () => void;
 }) {
   const t = useT();
-  const c = calc(equipment, settings);
+  const extra = customAppliances.map((a) => ({ id: a.id, watts: a.watts, hours: a.hours }));
+  const c = calc(equipment, settings, extra);
   const projType = TYPES.find((x) => x.id === projectType);
   const category = projType?.cat ?? "Residential";
   const catIcon = CATEGORY_ICON[category];

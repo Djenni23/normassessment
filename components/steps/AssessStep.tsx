@@ -1,37 +1,59 @@
 "use client";
+import { useState } from "react";
 import { Icon } from "../Icon";
-import { StepLabel, H1, Lede } from "../ui";
+import { StepLabel, H1, Lede, fieldInput, fieldLabel } from "../ui";
 import { CATALOG, TYPES, type ProjectTypeId } from "@/lib/catalog";
 import { calc, fmt, type Settings } from "@/lib/calc";
 import { useT } from "../LangProvider";
 import type { DictKey } from "@/lib/i18n/types";
 
 export type Equipment = Record<string, { qty: number; hours?: number }>;
+export type CustomAppliance = { id: string; label: string; watts: number; hours: number };
 
 export function AssessStep({
   equipment,
+  customAppliances,
   projectType,
   settings,
   onInc,
   onDec,
   onHours,
+  onAddCustom,
+  onRemoveCustom,
   onBack,
   onContinue,
 }: {
   equipment: Equipment;
+  customAppliances: CustomAppliance[];
   projectType: ProjectTypeId | null;
   settings: Settings;
   onInc: (id: string) => void;
   onDec: (id: string) => void;
   onHours: (id: string, h: number) => void;
+  onAddCustom: (a: CustomAppliance) => void;
+  onRemoveCustom: (id: string) => void;
   onBack: () => void;
   onContinue: () => void;
 }) {
   const t = useT();
-  const c = calc(equipment, settings);
+  const extra = customAppliances.map((a) => ({ id: a.id, watts: a.watts, hours: a.hours }));
+  const c = calc(equipment, settings, extra);
   const tp = TYPES.find((x) => x.id === projectType);
   const typeLabel = tp ? t(`type.${tp.id}.label` as DictKey) : "—";
   const disabled = c.count === 0;
+
+  const [adding, setAdding] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const [newWatts, setNewWatts] = useState("");
+
+  const confirmAdd = () => {
+    const w = parseInt(newWatts, 10);
+    if (!newLabel.trim() || !w || w <= 0) return;
+    onAddCustom({ id: `custom_${Date.now()}`, label: newLabel.trim(), watts: w, hours: 4 });
+    setNewLabel("");
+    setNewWatts("");
+    setAdding(false);
+  };
 
   return (
     <div className="anim-fadeUp">
@@ -50,74 +72,112 @@ export function AssessStep({
               const contribution = fmt((a.watts * qty * hours * duty) / 1000, 1);
               const wattLabel = a.watts >= 1000 ? `${fmt(a.watts / 1000, 1)} kW` : `${a.watts} W`;
               return (
-                <div
+                <ApplianceCard
                   key={a.id}
-                  className="rounded-[18px] p-4 transition-all duration-200"
-                  style={{
-                    background: "#fff",
-                    border: `1.5px solid ${active ? "#C9D6EC" : "#EBEFF6"}`,
-                    boxShadow: active ? "0 8px 22px rgba(53,80,142,.09)" : "0 4px 14px rgba(40,60,110,.04)",
-                  }}
-                >
-                  <div className="flex items-center gap-[11px]">
-                    <div
-                      className="w-[42px] h-[42px] rounded-[12px] shrink-0 flex items-center justify-center transition-all"
-                      style={{
-                        background: active ? "var(--brand-navy)" : "#EEF2FB",
-                        color: active ? "#fff" : "var(--brand-navy)",
-                      }}
-                    >
-                      <Icon name={a.icon} size={23} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-display font-bold text-[15px] text-[color:var(--ink)] leading-[1.15]">{t(`appliance.${a.id}` as DictKey)}</div>
-                      <div className="font-mono font-medium text-[11px] text-[color:var(--ink-ghost)]">{wattLabel}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 mt-[14px]">
-                    <button
-                      onClick={() => onDec(a.id)}
-                      className="w-[38px] h-[38px] rounded-[11px] border-0 bg-[#EFF2F7] cursor-pointer flex items-center justify-center transition-colors hover:bg-[#E2E8F2]"
-                      style={{ color: active ? "var(--ink-soft)" : "#B6C0D0" }}
-                    >
-                      <Icon name="remove" size={20} />
-                    </button>
-                    <div
-                      className="flex-1 text-center font-display font-extrabold text-[22px]"
-                      style={{ color: active ? "var(--ink)" : "#C2CBDA" }}
-                    >
-                      {qty}
-                    </div>
-                    <button
-                      onClick={() => onInc(a.id)}
-                      className="w-[38px] h-[38px] rounded-[11px] border-0 bg-[color:var(--brand-navy)] text-white cursor-pointer flex items-center justify-center shadow-[0_4px_10px_rgba(53,80,142,.22)] hover:brightness-110"
-                    >
-                      <Icon name="add" size={20} />
-                    </button>
-                  </div>
-                  {active && (
-                    <div className="anim-fadeUp-fast mt-[13px] pt-[12px] border-t border-dashed border-[#E3E9F2]">
-                      <div className="flex justify-between items-baseline mb-[5px]">
-                        <span className="text-[11.5px] text-[color:var(--ink-faint)] font-semibold">{t("assess.hours_per_day")}</span>
-                        <span className="font-display font-bold text-[13px] text-[color:var(--brand-navy)]">{hours}h</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={1}
-                        max={24}
-                        value={hours}
-                        onChange={(e) => onHours(a.id, parseInt(e.target.value, 10))}
-                        className="w-full h-[5px] cursor-pointer"
-                      />
-                      <div className="mt-[9px] inline-flex items-center gap-[5px] bg-[#FFF7E6] border border-[#F6E2B0] rounded-[8px] px-[9px] py-[3px] font-mono font-semibold text-[11.5px] text-[#B47B12]">
-                        <Icon name="bolt" size={14} />
-                        {contribution} {t("assess.kwh_per_day")}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  label={t(`appliance.${a.id}` as DictKey)}
+                  icon={a.icon}
+                  wattLabel={wattLabel}
+                  qty={qty}
+                  hours={hours}
+                  active={active}
+                  contribution={contribution}
+                  onInc={() => onInc(a.id)}
+                  onDec={() => onDec(a.id)}
+                  onHours={(h) => onHours(a.id, h)}
+                  hoursLabel={t("assess.hours_per_day")}
+                  kwhLabel={t("assess.kwh_per_day")}
+                />
               );
             })}
+
+            {customAppliances.map((a) => {
+              const qty = equipment[a.id]?.qty ?? 0;
+              const hours = equipment[a.id]?.hours ?? a.hours;
+              const active = qty > 0;
+              const contribution = fmt((a.watts * qty * hours) / 1000, 1);
+              const wattLabel = a.watts >= 1000 ? `${fmt(a.watts / 1000, 1)} kW` : `${a.watts} W`;
+              return (
+                <ApplianceCard
+                  key={a.id}
+                  label={a.label}
+                  icon="category"
+                  wattLabel={wattLabel}
+                  qty={qty}
+                  hours={hours}
+                  active={active}
+                  contribution={contribution}
+                  onInc={() => onInc(a.id)}
+                  onDec={() => onDec(a.id)}
+                  onHours={(h) => onHours(a.id, h)}
+                  hoursLabel={t("assess.hours_per_day")}
+                  kwhLabel={t("assess.kwh_per_day")}
+                  onRemove={() => onRemoveCustom(a.id)}
+                />
+              );
+            })}
+
+            {adding ? (
+              <div
+                className="rounded-[18px] p-4 anim-fadeUp-fast"
+                style={{ background: "#F4F8FF", border: "1.5px solid var(--brand-navy)" }}
+              >
+                <div className="font-display font-bold text-[13px] text-[color:var(--brand-navy)] mb-3">
+                  {t("assess.custom.add_title")}
+                </div>
+                <label className="block mb-2">
+                  <span className={fieldLabel} style={{ marginBottom: 4 }}>{t("assess.custom.name")}</span>
+                  <input
+                    autoFocus
+                    value={newLabel}
+                    onChange={(e) => setNewLabel(e.target.value.slice(0, 60))}
+                    placeholder={t("assess.custom.name_ph")}
+                    className={fieldInput}
+                    style={{ padding: "10px 12px", fontSize: 14 }}
+                  />
+                </label>
+                <label className="block mb-3">
+                  <span className={fieldLabel} style={{ marginBottom: 4 }}>{t("assess.custom.watts")}</span>
+                  <input
+                    inputMode="numeric"
+                    value={newWatts}
+                    onChange={(e) => setNewWatts(e.target.value.replace(/\D/g, ""))}
+                    placeholder={t("assess.custom.watts_ph")}
+                    className={fieldInput}
+                    style={{ padding: "10px 12px", fontSize: 14 }}
+                  />
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={confirmAdd}
+                    disabled={!newLabel.trim() || !newWatts}
+                    className="flex-1 rounded-[10px] py-[9px] font-semibold text-[13px] border-0 cursor-pointer"
+                    style={{
+                      background: newLabel.trim() && newWatts ? "var(--brand-navy)" : "#C2CBDA",
+                      color: "#fff",
+                    }}
+                  >
+                    {t("assess.custom.confirm")}
+                  </button>
+                  <button
+                    onClick={() => { setAdding(false); setNewLabel(""); setNewWatts(""); }}
+                    className="px-[14px] rounded-[10px] py-[9px] font-semibold text-[13px] border border-[color:var(--border-strong)] bg-white cursor-pointer text-[color:var(--ink-soft)]"
+                  >
+                    {t("common.cancel")}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setAdding(true)}
+                className="rounded-[18px] p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:border-[color:var(--brand-navy)] hover:bg-[#F4F8FF]"
+                style={{ background: "#fff", border: "1.5px dashed #C2CBDA", minHeight: 90 }}
+              >
+                <div className="w-[38px] h-[38px] rounded-[11px] bg-[#EEF2FB] flex items-center justify-center text-[color:var(--brand-navy)]">
+                  <Icon name="add" size={22} />
+                </div>
+                <span className="font-semibold text-[13px] text-[color:var(--ink-faint)]">{t("assess.custom.add_btn")}</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -177,6 +237,114 @@ export function AssessStep({
           </button>
         </aside>
       </div>
+    </div>
+  );
+}
+
+function ApplianceCard({
+  label,
+  icon,
+  wattLabel,
+  qty,
+  hours,
+  active,
+  contribution,
+  onInc,
+  onDec,
+  onHours,
+  hoursLabel,
+  kwhLabel,
+  onRemove,
+}: {
+  label: string;
+  icon: string;
+  wattLabel: string;
+  qty: number;
+  hours: number;
+  active: boolean;
+  contribution: string;
+  onInc: () => void;
+  onDec: () => void;
+  onHours: (h: number) => void;
+  hoursLabel: string;
+  kwhLabel: string;
+  onRemove?: () => void;
+}) {
+  return (
+    <div
+      className="rounded-[18px] p-4 transition-all duration-200"
+      style={{
+        background: "#fff",
+        border: `1.5px solid ${active ? "#C9D6EC" : "#EBEFF6"}`,
+        boxShadow: active ? "0 8px 22px rgba(53,80,142,.09)" : "0 4px 14px rgba(40,60,110,.04)",
+      }}
+    >
+      <div className="flex items-center gap-[11px]">
+        <div
+          className="w-[42px] h-[42px] rounded-[12px] shrink-0 flex items-center justify-center transition-all"
+          style={{
+            background: active ? "var(--brand-navy)" : "#EEF2FB",
+            color: active ? "#fff" : "var(--brand-navy)",
+          }}
+        >
+          <Icon name={icon} size={23} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-display font-bold text-[15px] text-[color:var(--ink)] leading-[1.15]">{label}</div>
+          <div className="font-mono font-medium text-[11px] text-[color:var(--ink-ghost)]">{wattLabel}</div>
+        </div>
+        {onRemove && (
+          <button
+            onClick={onRemove}
+            className="w-[24px] h-[24px] rounded-full flex items-center justify-center border-0 cursor-pointer shrink-0 text-[color:var(--ink-ghost)] hover:bg-[#FDECEA] hover:text-[color:var(--danger)]"
+            style={{ background: "#F4F6FB" }}
+            title="Remove"
+          >
+            <Icon name="close" size={15} />
+          </button>
+        )}
+      </div>
+      <div className="flex items-center justify-between gap-2 mt-[14px]">
+        <button
+          onClick={onDec}
+          className="w-[38px] h-[38px] rounded-[11px] border-0 bg-[#EFF2F7] cursor-pointer flex items-center justify-center transition-colors hover:bg-[#E2E8F2]"
+          style={{ color: active ? "var(--ink-soft)" : "#B6C0D0" }}
+        >
+          <Icon name="remove" size={20} />
+        </button>
+        <div
+          className="flex-1 text-center font-display font-extrabold text-[22px]"
+          style={{ color: active ? "var(--ink)" : "#C2CBDA" }}
+        >
+          {qty}
+        </div>
+        <button
+          onClick={onInc}
+          className="w-[38px] h-[38px] rounded-[11px] border-0 bg-[color:var(--brand-navy)] text-white cursor-pointer flex items-center justify-center shadow-[0_4px_10px_rgba(53,80,142,.22)] hover:brightness-110"
+        >
+          <Icon name="add" size={20} />
+        </button>
+      </div>
+      {active && (
+        <div className="anim-fadeUp-fast mt-[13px] pt-[12px] border-t border-dashed border-[#E3E9F2]">
+          <div className="flex justify-between items-baseline mb-[5px]">
+            <span className="text-[11.5px] text-[color:var(--ink-faint)] font-semibold">{hoursLabel}</span>
+            <span className="font-display font-bold text-[13px] text-[color:var(--brand-navy)]">{hours}h</span>
+          </div>
+          <input
+            type="range"
+            min={1}
+            max={24}
+            value={hours}
+            onChange={(e) => onHours(parseInt(e.target.value, 10))}
+            className="w-full h-[5px] cursor-pointer"
+          />
+          <div className="mt-[9px] inline-flex items-center gap-[5px] bg-[#FFF7E6] border border-[#F6E2B0] rounded-[8px] px-[9px] py-[3px] font-mono font-semibold text-[11.5px] text-[#B47B12]">
+            <Icon name="bolt" size={14} />
+            {contribution} {kwhLabel}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

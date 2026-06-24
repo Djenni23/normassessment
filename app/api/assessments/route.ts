@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongo";
-import { calc, DEFAULT_SETTINGS, genRef, type EquipmentInput, type Settings } from "@/lib/calc";
+import { calc, DEFAULT_SETTINGS, genRef, type EquipmentInput, type ExtraCatalogEntry, type Settings } from "@/lib/calc";
 import { TYPES, type ProjectTypeId, SYSTEM_TYPES, INSTALL_ZONES, GOALS, ROOF_TYPES, ROOF_MATERIALS, ORIENTATIONS, SOILS } from "@/lib/catalog";
 import { requireStaff } from "@/lib/auth";
 
@@ -92,8 +92,21 @@ export async function POST(req: Request) {
     }
   }
 
+  const customAppliances: ExtraCatalogEntry[] = [];
+  if (Array.isArray(body.customAppliances)) {
+    for (const item of body.customAppliances as Array<Record<string, unknown>>) {
+      const label = str(item.label, 80);
+      const watts = Number(item.watts);
+      const hours = Number(item.hours ?? 4);
+      const id = str(item.id, 40);
+      if (label && id && Number.isFinite(watts) && watts >= 1 && watts <= 50000) {
+        customAppliances.push({ id, watts, hours: Math.min(24, Math.max(1, hours)) });
+      }
+    }
+  }
+
   const settings = await loadSettings();
-  const computed = calc(equipment, settings);
+  const computed = calc(equipment, settings, customAppliances);
   const site = sanitizeSite(body.site);
 
   const customTypeLabel = str(body.customTypeLabel, 80);
@@ -120,6 +133,7 @@ export async function POST(req: Request) {
       address: String(location.address ?? "").trim(),
     },
     equipment,
+    customAppliances: body.customAppliances ?? [],
     site,
     computed,
     typeLabel,

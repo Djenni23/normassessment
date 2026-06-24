@@ -5,7 +5,7 @@ import { Header, type Screen } from "@/components/Header";
 import { TypeStep } from "@/components/steps/TypeStep";
 import { InfoStep, type ContactForm } from "@/components/steps/InfoStep";
 import { SiteStep } from "@/components/steps/SiteStep";
-import { AssessStep, type Equipment } from "@/components/steps/AssessStep";
+import { AssessStep, type Equipment, type CustomAppliance } from "@/components/steps/AssessStep";
 import { ResultsStep } from "@/components/steps/ResultsStep";
 import { SubmitStep, type SubmittedRecord } from "@/components/steps/SubmitStep";
 import { PRESETS, type ProjectTypeId, TYPES, CATALOG } from "@/lib/catalog";
@@ -19,6 +19,7 @@ type State = {
   form: ContactForm;
   site: SiteForm;
   equipment: Equipment;
+  customAppliances: CustomAppliance[];
   infoError: boolean;
   submitted: SubmittedRecord | null;
 };
@@ -27,9 +28,10 @@ const initial: State = {
   screen: "type",
   projectType: null,
   customTypeLabel: "",
-  form: { projectName: "", name: "", phone: "", whatsapp: "", email: "", country: "", city: "", address: "" },
+  form: { projectName: "", name: "", phone: "", whatsapp: "", email: "", country: "", countryOther: "", city: "", address: "" },
   site: EMPTY_SITE,
   equipment: {},
+  customAppliances: [],
   infoError: false,
   submitted: null,
 };
@@ -46,6 +48,8 @@ type Action =
   | { type: "INC"; id: string }
   | { type: "DEC"; id: string }
   | { type: "HOURS"; id: string; h: number }
+  | { type: "ADD_CUSTOM"; appliance: CustomAppliance }
+  | { type: "REMOVE_CUSTOM"; id: string }
   | { type: "INFO_ERROR" }
   | { type: "SUBMITTED"; record: SubmittedRecord }
   | { type: "RESTART" };
@@ -87,6 +91,14 @@ function reducer(s: State, a: Action): State {
     }
     case "HOURS":
       return { ...s, equipment: { ...s.equipment, [a.id]: { ...(s.equipment[a.id] ?? { qty: 0 }), hours: a.h } } };
+    case "ADD_CUSTOM":
+      return { ...s, customAppliances: [...s.customAppliances, a.appliance] };
+    case "REMOVE_CUSTOM":
+      return {
+        ...s,
+        customAppliances: s.customAppliances.filter((x) => x.id !== a.id),
+        equipment: Object.fromEntries(Object.entries(s.equipment).filter(([k]) => k !== a.id)),
+      };
     case "INFO_ERROR":
       return { ...s, infoError: true };
     case "SUBMITTED":
@@ -124,7 +136,8 @@ export default function Home() {
 
   const onContinueInfo = () => {
     const f = state.form;
-    if (!f.name.trim() || !f.phone.trim() || !f.country) {
+    const countryMissing = !f.country || (f.country === "Other" && !f.countryOther.trim());
+    if (!f.name.trim() || !f.phone.trim() || countryMissing) {
       dispatch({ type: "INFO_ERROR" });
       return;
     }
@@ -149,11 +162,14 @@ export default function Home() {
             email: state.form.email,
           },
           location: {
-            country: state.form.country,
+            country: state.form.country === "Other" && state.form.countryOther.trim()
+              ? state.form.countryOther.trim()
+              : state.form.country,
             city: state.form.city,
             address: state.form.address,
           },
           equipment: state.equipment,
+          customAppliances: state.customAppliances,
           site: state.site,
         }),
       });
@@ -225,14 +241,19 @@ export default function Home() {
         {state.screen === "assess" && (
           <AssessStep
             equipment={state.equipment}
+            customAppliances={state.customAppliances}
             projectType={state.projectType}
             settings={settings}
             onInc={(id) => dispatch({ type: "INC", id })}
             onDec={(id) => dispatch({ type: "DEC", id })}
             onHours={(id, h) => dispatch({ type: "HOURS", id, h })}
+            onAddCustom={(a) => dispatch({ type: "ADD_CUSTOM", appliance: a })}
+            onRemoveCustom={(id) => dispatch({ type: "REMOVE_CUSTOM", id })}
             onBack={goBack}
             onContinue={() => {
-              const hasItems = CATALOG.some((a) => (state.equipment[a.id]?.qty ?? 0) > 0);
+              const hasItems =
+                CATALOG.some((a) => (state.equipment[a.id]?.qty ?? 0) > 0) ||
+                state.customAppliances.some((a) => (state.equipment[a.id]?.qty ?? 0) > 0);
               if (hasItems) go("results");
             }}
           />
@@ -240,6 +261,7 @@ export default function Home() {
         {state.screen === "results" && (
           <ResultsStep
             equipment={state.equipment}
+            customAppliances={state.customAppliances}
             projectType={state.projectType}
             customTypeLabel={state.customTypeLabel}
             settings={settings}

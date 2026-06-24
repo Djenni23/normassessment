@@ -24,13 +24,15 @@ export type Computed = {
   byId: Record<string, number>;
 };
 
-export function calc(equipment: EquipmentInput, settings: Settings): Computed {
+export type ExtraCatalogEntry = { id: string; watts: number; hours: number; duty?: number };
+
+export function calc(equipment: EquipmentInput, settings: Settings, extra: ExtraCatalogEntry[] = []): Computed {
   let daily = 0;
   let peakRaw = 0;
   let count = 0;
   const byId: Record<string, number> = {};
 
-  for (const a of CATALOG) {
+  for (const a of [...CATALOG, ...extra]) {
     const entry = equipment[a.id];
     const qty = entry?.qty ?? 0;
     if (qty <= 0) continue;

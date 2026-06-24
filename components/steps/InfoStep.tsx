@@ -20,6 +20,7 @@ export type ContactForm = {
   whatsapp: string;
   email: string;
   country: string;
+  countryOther: string;
   city: string;
   address: string;
 };
@@ -124,6 +125,14 @@ export function InfoStep({
                 expand_more
               </span>
             </div>
+            {form.country === "Other" && (
+              <input
+                {...bind("countryOther")}
+                autoFocus
+                placeholder={t("info.country_other_ph")}
+                className={`${fieldInput} mt-2 anim-fadeUp-fast`}
+              />
+            )}
           </label>
           <label className="block">
             <span className={fieldLabel}>{t("info.city")}</span>

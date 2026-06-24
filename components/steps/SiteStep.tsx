@@ -230,17 +230,18 @@ export function SiteStep({
         <Section icon="more_horiz" label={t("site.section.extras")} />
 
         <div className="grid gap-[15px] [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
-          <label className="block">
-            <span className={fieldLabel}>
+          <div className="block">
+            <label htmlFor="monthly-bill" className={fieldLabel}>
               <Icon name="receipt_long" size={15} className="align-[-2px] text-[color:var(--brand-amber)]" /> {t("site.extras.monthly_bill")}
-            </span>
+            </label>
             <div className="flex gap-2">
               <input
-                inputMode="numeric"
+                id="monthly-bill"
+                inputMode="decimal"
                 value={site.monthlyBill}
                 onChange={(e) => onChange("monthlyBill", e.target.value.replace(/[^0-9.]/g, ""))}
                 placeholder={t("site.extras.monthly_bill_ph")}
-                className={`${fieldInput} flex-1`}
+                className={`${fieldInput} flex-1 min-w-0`}
               />
               <select
                 value={site.currency}
@@ -253,7 +254,7 @@ export function SiteStep({
               </select>
             </div>
             <span className="text-[11.5px] text-[color:var(--ink-faint)] mt-1 block">{t("site.extras.bill_hint")}</span>
-          </label>
+          </div>
 
           <label className="block">
             <span className={fieldLabel}>{t("site.extras.module_brand")}</span>
