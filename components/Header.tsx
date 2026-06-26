@@ -60,6 +60,7 @@ export function Header({
 
         <div className="flex-1" />
 
+        {/* Desktop/tablet: full stepper with labels */}
         {showStepper && (
           <div className="hidden md:flex items-center gap-1">
             {STEP_DEFS.map((s, i) => {
@@ -104,12 +105,44 @@ export function Header({
 
         <LangSwitcher />
 
+        {/* Mobile-only: compact numbers-only stepper */}
+        {showStepper && (
+          <div className="md:hidden flex items-center gap-[2px]">
+            {STEP_DEFS.map((s, i) => {
+              const done = i < curIdx;
+              const active = i === curIdx;
+              const hasBar = i < STEP_DEFS.length - 1;
+              return (
+                <div key={s.key} className="flex items-center gap-[2px]">
+                  <div
+                    className={`w-[22px] h-[22px] rounded-full flex items-center justify-center font-display font-bold text-[11px] shrink-0 transition-all duration-300 ${
+                      done
+                        ? "bg-[color:var(--success)] text-white"
+                        : active
+                        ? "bg-[color:var(--brand-navy)] text-white shadow-[0_0_0_3px_rgba(53,80,142,.16)]"
+                        : "bg-[#E5EAF2] text-[color:var(--ink-ghost)]"
+                    }`}
+                  >
+                    {done ? <Icon name="check" size={13} /> : i + 1}
+                  </div>
+                  {hasBar && (
+                    <div
+                      className="w-[10px] h-[2px] rounded-[2px]"
+                      style={{ background: done ? "var(--success)" : "#DDE3EC" }}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <Link
           href={staffHref}
           className="inline-flex items-center gap-[7px] bg-white border-[1.5px] border-[color:var(--border-strong)] text-[color:var(--ink-soft)] rounded-[11px] px-[14px] py-[9px] font-semibold text-[13.5px] cursor-pointer transition-colors hover:bg-[#EEF2FB]"
         >
           <Icon name={staffIcon} size={18} />
-          {staffLabel}
+          <span className="hidden sm:inline">{staffLabel}</span>
         </Link>
       </div>
     </header>

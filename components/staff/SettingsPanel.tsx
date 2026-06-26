@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Icon } from "../Icon";
+import { useT } from "../LangProvider";
 import type { Settings } from "@/lib/calc";
 
 export function SettingsPanel({ initial }: { initial: Settings & { updatedAt?: string | null } }) {
+  const t = useT();
   const [s, setS] = useState(initial);
   const [savedAt, setSavedAt] = useState<string | null>(initial.updatedAt ?? null);
   const [busy, setBusy] = useState(false);
@@ -29,7 +31,7 @@ export function SettingsPanel({ initial }: { initial: Settings & { updatedAt?: s
       const d = await res.json();
       setSavedAt(d.updatedAt);
     } else {
-      alert("Save failed.");
+      alert(t("staff.settings.save_failed"));
     }
   };
 
@@ -38,18 +40,18 @@ export function SettingsPanel({ initial }: { initial: Settings & { updatedAt?: s
       <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
         <div className="flex items-center gap-2">
           <Icon name="tune" size={20} className="text-[color:var(--brand-navy)]" />
-          <div className="font-display font-bold text-[15px] text-[color:var(--ink)]">Sizing parameters</div>
+          <div className="font-display font-bold text-[15px] text-[color:var(--ink)]">{t("staff.settings.title")}</div>
         </div>
         {savedAt && (
           <div className="text-[12px] text-[color:var(--ink-ghost)] font-mono">
-            Updated {new Date(savedAt).toLocaleString()}
+            {t("staff.settings.updated")} {new Date(savedAt).toLocaleString()}
           </div>
         )}
       </div>
       <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
-        <SliderField label="Peak sun hours" value={s.peakSunHours} min={3.5} max={6.5} step={0.1} fmt={(v) => v.toFixed(1)} onChange={(v) => setS({ ...s, peakSunHours: v })} />
-        <SliderField label="Performance ratio" value={s.performanceRatio} min={0.6} max={0.95} step={0.05} fmt={(v) => v.toFixed(2)} onChange={(v) => setS({ ...s, performanceRatio: v })} />
-        <SliderField label="Panel wattage" value={s.panelWatt} min={350} max={700} step={10} fmt={(v) => `${Math.round(v)} W`} onChange={(v) => setS({ ...s, panelWatt: Math.round(v) })} />
+        <SliderField label={t("staff.settings.peak_sun")} value={s.peakSunHours} min={3.5} max={6.5} step={0.1} fmt={(v) => v.toFixed(1)} onChange={(v) => setS({ ...s, peakSunHours: v })} />
+        <SliderField label={t("staff.settings.perf_ratio")} value={s.performanceRatio} min={0.6} max={0.95} step={0.05} fmt={(v) => v.toFixed(2)} onChange={(v) => setS({ ...s, performanceRatio: v })} />
+        <SliderField label={t("staff.settings.panel_watt")} value={s.panelWatt} min={350} max={700} step={10} fmt={(v) => `${Math.round(v)} W`} onChange={(v) => setS({ ...s, panelWatt: Math.round(v) })} />
       </div>
       <div className="flex justify-end mt-4">
         <button
@@ -58,7 +60,7 @@ export function SettingsPanel({ initial }: { initial: Settings & { updatedAt?: s
           className="inline-flex items-center gap-2 bg-[color:var(--brand-navy)] text-white border-0 rounded-[12px] px-[18px] py-[10px] font-semibold text-[14px] cursor-pointer shadow-[0_6px_16px_rgba(53,80,142,.22)] hover:brightness-110 disabled:opacity-60"
         >
           <Icon name="save" size={18} />
-          {busy ? "Saving…" : "Save"}
+          {busy ? t("staff.settings.saving") : t("staff.settings.save")}
         </button>
       </div>
     </div>

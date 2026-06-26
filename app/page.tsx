@@ -28,7 +28,7 @@ const initial: State = {
   screen: "type",
   projectType: null,
   customTypeLabel: "",
-  form: { projectName: "", name: "", phone: "", whatsapp: "", email: "", country: "", countryOther: "", city: "", address: "" },
+  form: { projectName: "", name: "", dialCode: "", phone: "", whatsappDial: "", whatsapp: "", email: "", country: "", countryOther: "", city: "", address: "" },
   site: EMPTY_SITE,
   equipment: {},
   customAppliances: [],
@@ -137,7 +137,7 @@ export default function Home() {
   const onContinueInfo = () => {
     const f = state.form;
     const countryMissing = !f.country || (f.country === "Other" && !f.countryOther.trim());
-    if (!f.name.trim() || !f.phone.trim() || countryMissing) {
+    if (!f.name.trim() || !f.dialCode.trim() || !f.phone.trim() || countryMissing) {
       dispatch({ type: "INFO_ERROR" });
       return;
     }
@@ -157,7 +157,9 @@ export default function Home() {
           projectName: state.form.projectName,
           contact: {
             name: state.form.name,
+            dialCode: state.form.dialCode,
             phone: state.form.phone,
+            whatsappDial: state.form.whatsappDial,
             whatsapp: state.form.whatsapp,
             email: state.form.email,
           },

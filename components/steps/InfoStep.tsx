@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Icon } from "../Icon";
 import {
   StepLabel,
@@ -10,13 +11,15 @@ import {
   fieldLabel,
   fieldInput,
 } from "../ui";
-import { COUNTRIES } from "@/lib/catalog";
+import { COUNTRIES, DIAL_CODES } from "@/lib/catalog";
 import { useT } from "../LangProvider";
 
 export type ContactForm = {
   projectName: string;
   name: string;
+  dialCode: string;
   phone: string;
+  whatsappDial: string;
   whatsapp: string;
   email: string;
   country: string;
@@ -24,6 +27,83 @@ export type ContactForm = {
   city: string;
   address: string;
 };
+
+function DialPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  // "Custom mode" lets the user type a code that's not in the preset list. If the
+  // typed code later matches a preset, we automatically flip back to the select
+  // so the country flag shows up.
+  const [custom, setCustom] = useState(() => !!value && !DIAL_CODES.some((d) => d.code === value));
+
+  const formatDial = (raw: string): string => {
+    const digits = raw.replace(/\D/g, "");
+    return digits ? "+" + digits : "";
+  };
+
+  const onSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const v = e.target.value;
+    if (v === "__other__") {
+      setCustom(true);
+      onChange("");
+    } else {
+      setCustom(false);
+      onChange(v);
+    }
+  };
+
+  const reset = () => {
+    setCustom(false);
+    onChange("");
+  };
+
+  return (
+    <div className="relative shrink-0 w-[72px]">
+      {custom ? (
+        <>
+          <input
+            value={value}
+            onChange={(e) => {
+              const next = formatDial(e.target.value);
+              onChange(next);
+              if (next && DIAL_CODES.some((d) => d.code === next)) setCustom(false);
+            }}
+            placeholder="+"
+            inputMode="tel"
+            autoFocus
+            className={`${fieldInput} w-full pr-[20px]`}
+          />
+          <button
+            type="button"
+            onClick={reset}
+            aria-label="reset"
+            className="material-symbols absolute right-[6px] top-1/2 -translate-y-1/2 text-[color:var(--ink-faint)] bg-transparent border-0 p-0 cursor-pointer hover:text-[color:var(--ink-muted)]"
+            style={{ fontSize: 18 }}
+          >
+            close
+          </button>
+        </>
+      ) : (
+        <>
+          <select
+            value={value}
+            onChange={onSelect}
+            className={`${fieldInput} w-full pr-[20px] cursor-pointer`}
+          >
+            <option value="">+</option>
+            {DIAL_CODES.map((d) => (
+              <option key={d.code} value={d.code}>
+                {d.flag} {d.code}
+              </option>
+            ))}
+            <option value="__other__">{"…"}</option>
+          </select>
+          <span className="material-symbols absolute right-[4px] top-1/2 -translate-y-1/2 text-[color:var(--ink-faint)] pointer-events-none" style={{ fontSize: 18 }}>
+            expand_more
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
 
 export function InfoStep({
   form,
@@ -91,13 +171,19 @@ export function InfoStep({
             <span className={fieldLabel}>
               {t("info.phone")} <span className="text-[color:var(--danger)]">*</span>
             </span>
-            <input {...bind("phone")} type="tel" inputMode="numeric" placeholder={t("info.phone_ph")} className={fieldInput} />
+            <div className="flex gap-2">
+              <DialPicker value={form.dialCode} onChange={(v) => onChange("dialCode", v)} />
+              <input {...bind("phone")} type="tel" inputMode="numeric" placeholder={t("info.phone_ph")} className={`${fieldInput} flex-1 min-w-0`} />
+            </div>
           </label>
           <label className="block">
             <span className={fieldLabel}>
               <Icon name="chat" size={15} className="align-[-2px] text-[color:var(--success)]" /> {t("info.whatsapp")}
             </span>
-            <input {...bind("whatsapp")} type="tel" inputMode="numeric" placeholder={t("info.whatsapp_ph")} className={fieldInput} />
+            <div className="flex gap-2">
+              <DialPicker value={form.whatsappDial} onChange={(v) => onChange("whatsappDial", v)} />
+              <input {...bind("whatsapp")} type="tel" inputMode="numeric" placeholder={t("info.whatsapp_ph")} className={`${fieldInput} flex-1 min-w-0`} />
+            </div>
           </label>
           <label className="block">
             <span className={fieldLabel}>{t("info.email")}</span>

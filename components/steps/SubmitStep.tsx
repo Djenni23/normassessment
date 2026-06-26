@@ -66,9 +66,6 @@ export function SubmitStep({
           {t("submit.view_dashboard")}
         </PrimaryButton>
       </div>
-      <p className="text-[12.5px] text-[color:var(--ink-faint)] mt-3">
-        {t("submit.staff_link_note", { ref: submitted.ref })}
-      </p>
     </div>
   );
 }

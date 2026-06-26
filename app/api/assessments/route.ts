@@ -3,6 +3,7 @@ import { getDb } from "@/lib/mongo";
 import { calc, DEFAULT_SETTINGS, genRef, type EquipmentInput, type ExtraCatalogEntry, type Settings } from "@/lib/calc";
 import { TYPES, type ProjectTypeId, SYSTEM_TYPES, INSTALL_ZONES, GOALS, ROOF_TYPES, ROOF_MATERIALS, ORIENTATIONS, SOILS } from "@/lib/catalog";
 import { requireStaff } from "@/lib/auth";
+import { sendNewAssessmentEmail } from "@/lib/mailer";
 
 const ID_SETS = {
   systemType: new Set(SYSTEM_TYPES.map((x) => x.id)),
@@ -78,7 +79,12 @@ export async function POST(req: Request) {
 
   const contact = body.contact ?? {};
   const location = body.location ?? {};
-  if (!String(contact.name ?? "").trim() || !String(contact.phone ?? "").trim() || !String(location.country ?? "").trim()) {
+  if (
+    !String(contact.name ?? "").trim() ||
+    !String(contact.dialCode ?? "").trim() ||
+    !String(contact.phone ?? "").trim() ||
+    !String(location.country ?? "").trim()
+  ) {
     return NextResponse.json({ error: "missing required fields" }, { status: 400 });
   }
 
@@ -123,7 +129,9 @@ export async function POST(req: Request) {
     projectName: str(body.projectName, 200),
     contact: {
       name: String(contact.name).trim(),
+      dialCode: str(contact.dialCode, 8),
       phone: String(contact.phone).trim(),
+      whatsappDial: str(contact.whatsappDial, 8),
       whatsapp: String(contact.whatsapp ?? "").trim(),
       email: String(contact.email ?? "").trim(),
     },
@@ -145,6 +153,28 @@ export async function POST(req: Request) {
 
   const db = await getDb();
   await db.collection("assessments").insertOne(doc);
+
+  // Notify the Norm Enerji team. Never let an email failure break the submission.
+  try {
+    await sendNewAssessmentEmail({
+      ref,
+      name: doc.contact.name,
+      phone: `${doc.contact.dialCode ? doc.contact.dialCode + " " : ""}${doc.contact.phone}`,
+      whatsapp: doc.contact.whatsapp
+        ? `${doc.contact.whatsappDial ? doc.contact.whatsappDial + " " : ""}${doc.contact.whatsapp}`
+        : "",
+      email: doc.contact.email,
+      typeLabel,
+      country: doc.location.country,
+      city: doc.location.city,
+      pv: computed.pv,
+      daily: computed.daily,
+      panels: computed.panels,
+    });
+  } catch (err) {
+    console.error("[assessments] staff notification email failed", err);
+  }
+
   return NextResponse.json({ ref, computed, status: doc.status }, { status: 201 });
 }
 
@@ -172,7 +202,16 @@ export async function GET(req: Request) {
       name: d.contact?.name ?? "",
       projectName: d.projectName ?? "",
       country: d.location?.country ?? "",
+      city: d.location?.city ?? "",
+      address: d.location?.address ?? "",
+      phone: d.contact?.phone ?? "",
+      dialCode: d.contact?.dialCode ?? "",
+      whatsapp: d.contact?.whatsapp ?? "",
+      whatsappDial: d.contact?.whatsappDial ?? "",
+      email: d.contact?.email ?? "",
+      customTypeLabel: d.customTypeLabel ?? "",
       type: d.typeLabel ?? "",
+      projectType: d.projectType ?? undefined,
       typeIcon: d.typeIcon ?? "home",
       size: `${(d.computed?.pv ?? 0).toFixed(1)} kWp`,
       daily: (d.computed?.daily ?? 0).toFixed(1),

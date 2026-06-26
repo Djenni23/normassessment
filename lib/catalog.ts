@@ -2,7 +2,7 @@ export type ProjectTypeId =
   | "house"
   | "business"
   | "office"
-  | "school"
+  | "mine"
   | "farm"
   | "irrigation"
   | "other";
@@ -21,7 +21,7 @@ export const TYPES: ProjectType[] = [
   { id: "house", label: "House", icon: "home", desc: "Home or residence", cat: "Residential" },
   { id: "business", label: "Business", icon: "storefront", desc: "Shop or commercial space", cat: "Commercial" },
   { id: "office", label: "Office", icon: "business_center", desc: "Workspace or company", cat: "Commercial" },
-  { id: "school", label: "School", icon: "school", desc: "Education facility", cat: "Commercial" },
+  { id: "mine", label: "Mine", icon: "terrain", desc: "Mining site", cat: "Commercial" },
   { id: "farm", label: "Farm", icon: "agriculture", desc: "Agricultural site", cat: "Agricultural" },
   { id: "irrigation", label: "Solar Irrigation", icon: "water_drop", desc: "Pumping & irrigation", cat: "Agricultural" },
   { id: "other", label: "Other", icon: "category", desc: "Tell us your project", cat: "Residential" },
@@ -61,11 +61,33 @@ export const COUNTRIES = [
   "Togo", "Tanzania", "Uganda", "Morocco", "Türkiye", "Other",
 ];
 
+// International dialing codes for the phone field. The customer can pick one
+// or choose "Other…" to type a custom code manually.
+export const DIAL_CODES: Array<{ code: string; label: string; flag: string }> = [
+  { code: "+90", label: "Türkiye", flag: "🇹🇷" },
+  { code: "+221", label: "Senegal", flag: "🇸🇳" },
+  { code: "+225", label: "Côte d’Ivoire", flag: "🇨🇮" },
+  { code: "+223", label: "Mali", flag: "🇲🇱" },
+  { code: "+237", label: "Cameroon", flag: "🇨🇲" },
+  { code: "+234", label: "Nigeria", flag: "🇳🇬" },
+  { code: "+233", label: "Ghana", flag: "🇬🇭" },
+  { code: "+254", label: "Kenya", flag: "🇰🇪" },
+  { code: "+226", label: "Burkina Faso", flag: "🇧🇫" },
+  { code: "+227", label: "Niger", flag: "🇳🇪" },
+  { code: "+243", label: "DR Congo", flag: "🇨🇩" },
+  { code: "+224", label: "Guinea", flag: "🇬🇳" },
+  { code: "+229", label: "Benin", flag: "🇧🇯" },
+  { code: "+228", label: "Togo", flag: "🇹🇬" },
+  { code: "+255", label: "Tanzania", flag: "🇹🇿" },
+  { code: "+256", label: "Uganda", flag: "🇺🇬" },
+  { code: "+212", label: "Morocco", flag: "🇲🇦" },
+];
+
 export const PRESETS: Record<ProjectTypeId, Record<string, number>> = {
   house: { lights: 6, tv: 1, fridge: 1, fan: 2, internet: 1 },
   business: { lights: 10, tv: 1, fridge: 1, computer: 2, internet: 1, camera: 2 },
   office: { lights: 12, computer: 6, ac: 1, internet: 1, camera: 2 },
-  school: { lights: 20, computer: 8, fan: 6, internet: 1, camera: 2 },
+  mine: { lights: 20, pump: 4, computer: 4, camera: 4, internet: 1 },
   farm: { lights: 6, pump: 1, fridge: 1, fan: 2 },
   irrigation: { pump: 2, lights: 2 },
   other: {},

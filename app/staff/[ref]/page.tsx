@@ -11,11 +11,20 @@ import {
   INSTALL_ZONES,
   GOALS,
   CATALOG,
+  type ProjectTypeId,
 } from "@/lib/catalog";
 import { ChecklistActions } from "@/components/staff/ChecklistActions";
 import { StatusEditor } from "@/components/staff/StatusEditor";
+import { getServerT } from "@/lib/i18n/server";
+import type { DictKey } from "@/lib/i18n/types";
 
 export const dynamic = "force-dynamic";
+
+const STATUS_KEY: Record<string, DictKey> = {
+  New: "staff.status.new",
+  "In Review": "staff.status.in_review",
+  Quoted: "staff.status.quoted",
+};
 
 type SiteDoc = {
   systemType: string | null;
@@ -37,7 +46,9 @@ type Assessment = {
   _id: string;
   ref: string;
   projectName?: string;
-  contact: { name: string; phone: string; whatsapp?: string; email?: string };
+  projectType?: ProjectTypeId;
+  customTypeLabel?: string;
+  contact: { name: string; phone: string; dialCode?: string; whatsappDial?: string; whatsapp?: string; email?: string };
   location: { country: string; city?: string; address?: string };
   equipment: Record<string, { qty: number; hours?: number }>;
   site?: SiteDoc;
@@ -59,9 +70,42 @@ export default async function ChecklistPage({ params }: { params: Promise<{ ref:
   const a = await load(ref);
   if (!a) notFound();
 
+  const { t } = await getServerT();
   const site = a.site;
-  const labelOf = <T extends { id: string; label: string }>(list: readonly T[], id: string | null | undefined) =>
-    list.find((x) => x.id === id)?.label ?? "";
+
+  // Units & shared value fragments
+  const kWh = t("results.unit.kwh");
+  const kWp = t("results.unit.kwp");
+
+  // Translated catalog item arrays (reuse the existing site.* translation keys)
+  const sysTypeItems = SYSTEM_TYPES.map((s) => ({ id: s.id, label: t(`site.systype.${s.id}.label` as DictKey), desc: t(`site.systype.${s.id}.desc` as DictKey) }));
+  const zoneItems = INSTALL_ZONES.map((z) => ({ id: z.id, label: t(`site.zone.${z.id}` as DictKey) }));
+  const roofTypeItems = ROOF_TYPES.map((x) => ({ id: x.id, label: t(`site.rooftype.${x.id}` as DictKey) }));
+  const materialItems = ROOF_MATERIALS.map((x) => ({ id: x.id, label: t(`site.mat.${x.id}` as DictKey) }));
+  const orientationItems = ORIENTATIONS.map((x) => ({ id: x.id, label: t(`site.orient.${x.id}` as DictKey) }));
+  const soilItems = SOILS.map((x) => ({ id: x.id, label: t(`site.soil.${x.id}` as DictKey) }));
+  const goalItems = GOALS.map((g) => ({ id: g.id, label: t(`site.goal.${g.id}.label` as DictKey) }));
+
+  const projectTypeLabel = a.projectType && a.projectType !== "other"
+    ? t(`type.${a.projectType}.label` as DictKey)
+    : (a.customTypeLabel || a.typeLabel);
+
+  const statusLabel = t(STATUS_KEY[a.status] ?? "staff.status.new");
+
+  const phoneValue = `${a.contact.dialCode ? a.contact.dialCode + " " : ""}${a.contact.phone}`;
+  const whatsappValue = a.contact.whatsapp
+    ? `${a.contact.whatsappDial ? a.contact.whatsappDial + " " : ""}${a.contact.whatsapp}`
+    : "";
+
+  const batteryValue = site?.batteryCapacityKwh != null
+    ? `${fmt(site.batteryCapacityKwh, 1)} ${kWh} (${t("staff.checklist.v.customer")})  ·  ${t("staff.checklist.v.recommended")} ${fmt(a.computed.batt, 1)} ${kWh}`
+    : `${fmt(a.computed.batt, 1)} ${kWh} (${t("staff.checklist.v.recommended")})`;
+
+  const inverterValue = site?.inverterCount && site?.inverterCapacityKw
+    ? `${site.inverterCount} × ${fmt(site.inverterCapacityKw, 1)} kW`
+    : site?.inverterCount
+      ? `${site.inverterCount} (${t("staff.checklist.v.cap_unspecified")})`
+      : "—";
 
   const Check = ({ on }: { on: boolean }) => (
     <span style={{ display: "inline-block", width: 14, height: 14, border: "1.5px solid #1B2A50", borderRadius: 3, marginRight: 7, verticalAlign: -2, background: on ? "#1B2A50" : "transparent", position: "relative" }}>
@@ -75,7 +119,7 @@ export default async function ChecklistPage({ params }: { params: Promise<{ ref:
         <div className="flex items-center justify-between mb-4 print:hidden">
           <Link href="/staff" className="inline-flex items-center gap-2 text-[14px] text-[color:var(--ink-muted)] hover:text-[color:var(--brand-navy)] font-semibold">
             <span className="material-symbols" style={{ fontSize: 18 }}>arrow_back</span>
-            Back to dashboard
+            {t("staff.checklist.back")}
           </Link>
           <ChecklistActions />
         </div>
@@ -91,37 +135,37 @@ export default async function ChecklistPage({ params }: { params: Promise<{ ref:
                 <img src="/norm-mark.png" alt="Norm Enerji" className="w-[44px] h-[44px] rounded-[10px]" />
                 <div>
                   <div className="font-display font-extrabold text-[20px] tracking-[-.4px] text-[#2A3F73]">NORM ENERJI</div>
-                  <div className="font-mono text-[10.5px] tracking-[1.5px] text-[color:var(--brand-amber)] uppercase">Preliminary Solar Form / Checklist</div>
+                  <div className="font-mono text-[10.5px] tracking-[1.5px] text-[color:var(--brand-amber)] uppercase">{t("staff.checklist.tagline")}</div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-mono text-[11px] text-[color:var(--ink-ghost)] uppercase tracking-[.6px]">Reference</div>
+                <div className="font-mono text-[11px] text-[color:var(--ink-ghost)] uppercase tracking-[.6px]">{t("staff.checklist.reference")}</div>
                 <div className="font-mono font-semibold text-[16px] text-[color:var(--brand-navy)]">{a.ref}</div>
               </div>
             </div>
             <h1 className="font-display font-bold text-[22px] text-[color:var(--ink)] mt-4 leading-tight">
-              ☀️ Preliminary Information Form — Solar System / Checklist
+              {t("staff.checklist.heading")}
             </h1>
             <div className="text-[12.5px] text-[color:var(--ink-faint)] mt-1">
-              Generated {new Date(a.createdAt).toLocaleString()} · Status: <strong>{a.status}</strong>
+              {t("staff.checklist.generated")} {new Date(a.createdAt).toLocaleString()} · {t("staff.checklist.status")}: <strong>{statusLabel}</strong>
             </div>
           </header>
 
           {/* 1. Project info */}
-          <Sec title="1. Project information">
-            <Row label="Project / company name" value={a.projectName || "—"} />
-            <Row label="Address / location" value={[a.location.address, a.location.city, a.location.country].filter(Boolean).join(", ") || "—"} />
-            <Row label="Customer" value={a.contact.name} />
-            <Row label="Phone" value={a.contact.phone} />
-            {a.contact.whatsapp && <Row label="WhatsApp" value={a.contact.whatsapp} />}
-            {a.contact.email && <Row label="Email" value={a.contact.email} />}
-            <Row label="Project type" value={a.typeLabel} />
+          <Sec title={t("staff.checklist.sec.project")}>
+            <Row label={t("staff.checklist.f.project_name")} value={a.projectName || "—"} />
+            <Row label={t("staff.checklist.f.address")} value={[a.location.address, a.location.city, a.location.country].filter(Boolean).join(", ") || "—"} />
+            <Row label={t("staff.checklist.f.customer")} value={a.contact.name} />
+            <Row label={t("staff.checklist.f.phone")} value={phoneValue} />
+            {whatsappValue && <Row label={t("staff.checklist.f.whatsapp")} value={whatsappValue} />}
+            {a.contact.email && <Row label={t("staff.checklist.f.email")} value={a.contact.email} />}
+            <Row label={t("staff.checklist.f.project_type")} value={projectTypeLabel} />
           </Sec>
 
           {/* 2. System type */}
-          <Sec title="2. System type">
+          <Sec title={t("staff.checklist.sec.system")}>
             <div className="flex flex-wrap gap-x-6 gap-y-2">
-              {SYSTEM_TYPES.map((s) => (
+              {sysTypeItems.map((s) => (
                 <span key={s.id} className="text-[13.5px] text-[color:var(--ink)]">
                   <Check on={site?.systemType === s.id} />
                   {s.label} <span className="text-[color:var(--ink-faint)]">— {s.desc}</span>
@@ -131,36 +175,20 @@ export default async function ChecklistPage({ params }: { params: Promise<{ ref:
           </Sec>
 
           {/* 3. Power & energy needs */}
-          <Sec title="3. Power & energy needs">
-            <Row label="Recommended system capacity" value={`${fmt(a.computed.pv, 1)} kWp`} />
-            <Row label="Average daily consumption" value={`${fmt(a.computed.daily, 1)} kWh`} />
-            <Row
-              label="Requested battery capacity"
-              value={
-                site?.batteryCapacityKwh != null
-                  ? `${fmt(site.batteryCapacityKwh, 1)} kWh (customer)  ·  recommended ${fmt(a.computed.batt, 1)} kWh`
-                  : `${fmt(a.computed.batt, 1)} kWh (recommended)`
-              }
-            />
-            <Row
-              label="Inverters (requested)"
-              value={
-                site?.inverterCount && site?.inverterCapacityKw
-                  ? `${site.inverterCount} × ${fmt(site.inverterCapacityKw, 1)} kW`
-                  : site?.inverterCount
-                    ? `${site.inverterCount} (capacity unspecified)`
-                    : "—"
-              }
-            />
-            <Row label="Estimated panels" value={`${a.computed.panels} panels`} />
-            <Row label="Peak load" value={`${fmt(Math.round(a.computed.peak), 0)} W`} />
-            <Row label="Equipment items" value={String(a.computed.count)} />
+          <Sec title={t("staff.checklist.sec.power")}>
+            <Row label={t("staff.checklist.f.rec_capacity")} value={`${fmt(a.computed.pv, 1)} ${kWp}`} />
+            <Row label={t("staff.checklist.f.avg_daily")} value={`${fmt(a.computed.daily, 1)} ${kWh}`} />
+            <Row label={t("staff.checklist.f.req_battery")} value={batteryValue} />
+            <Row label={t("staff.checklist.f.inverters")} value={inverterValue} />
+            <Row label={t("staff.checklist.f.est_panels")} value={`${a.computed.panels} ${t("results.unit.panels")}`} />
+            <Row label={t("staff.checklist.f.peak_load")} value={`${fmt(Math.round(a.computed.peak), 0)} W`} />
+            <Row label={t("staff.checklist.f.equip_items")} value={String(a.computed.count)} />
           </Sec>
 
           {/* 4. Installation zone */}
-          <Sec title="4. Installation zone">
+          <Sec title={t("staff.checklist.sec.zone")}>
             <div className="flex flex-wrap gap-x-6 gap-y-2 mb-3">
-              {INSTALL_ZONES.map((z) => (
+              {zoneItems.map((z) => (
                 <span key={z.id} className="text-[13.5px] text-[color:var(--ink)]">
                   <Check on={site?.installZone === z.id} />
                   {z.label}
@@ -170,54 +198,54 @@ export default async function ChecklistPage({ params }: { params: Promise<{ ref:
 
             {site?.installZone === "roof" && (
               <div className="border-l-2 border-[color:var(--brand-navy)] pl-4 mt-2 grid gap-2">
-                <SubChoices label="Roof type" items={ROOF_TYPES} value={site.roof?.type} />
-                <SubChoicesWithOther label="Material" items={ROOF_MATERIALS} value={site.roof?.material ?? null} other={site.roof?.materialOther} />
-                <SubChoicesWithOther label="Orientation" items={ORIENTATIONS} value={site.roof?.orientation ?? null} other={site.roof?.orientationOther} />
-                <Row label="Tilt angle" value={site.roof?.tiltDeg != null ? `${site.roof.tiltDeg}°` : "—"} />
+                <SubChoices label={t("staff.checklist.f.roof_type")} items={roofTypeItems} value={site.roof?.type} />
+                <SubChoicesWithOther label={t("staff.checklist.f.material")} items={materialItems} value={site.roof?.material ?? null} other={site.roof?.materialOther} />
+                <SubChoicesWithOther label={t("staff.checklist.f.orientation")} items={orientationItems} value={site.roof?.orientation ?? null} other={site.roof?.orientationOther} />
+                <Row label={t("staff.checklist.f.tilt")} value={site.roof?.tiltDeg != null ? `${site.roof.tiltDeg}°` : "—"} />
               </div>
             )}
 
             {site?.installZone === "ground" && (
               <div className="border-l-2 border-[color:var(--brand-navy)] pl-4 mt-2 grid gap-2">
-                <Row label="Available surface" value={site.ground?.surfaceSqm != null ? `${site.ground.surfaceSqm} m²` : "—"} />
-                <SubChoicesWithOther label="Soil nature" items={SOILS} value={site.ground?.soil ?? null} other={site.ground?.soilOther} />
+                <Row label={t("staff.checklist.f.surface")} value={site.ground?.surfaceSqm != null ? `${site.ground.surfaceSqm} m²` : "—"} />
+                <SubChoicesWithOther label={t("staff.checklist.f.soil")} items={soilItems} value={site.ground?.soil ?? null} other={site.ground?.soilOther} />
               </div>
             )}
           </Sec>
 
           {/* 5. Objectives */}
-          <Sec title="5. Objectives & additional information">
+          <Sec title={t("staff.checklist.sec.objectives")}>
             <div className="flex flex-wrap gap-x-6 gap-y-2 mb-3">
-              {GOALS.map((g) => (
+              {goalItems.map((g) => (
                 <span key={g.id} className="text-[13.5px] text-[color:var(--ink)]">
                   <Check on={site?.goal === g.id} />
                   {g.label}
                 </span>
               ))}
             </div>
-            <Row label="Preferred module brand / type" value={site?.moduleBrand || "—"} />
-            <Row label="Delivery / project timeline" value={site?.timeline || "—"} />
+            <Row label={t("staff.checklist.f.module_brand")} value={site?.moduleBrand || "—"} />
+            <Row label={t("staff.checklist.f.timeline")} value={site?.timeline || "—"} />
             {site?.monthlyBill != null && site.monthlyBill > 0 && (
-              <Row label="Monthly electricity bill" value={`${site.monthlyBill.toLocaleString("en-US")} ${site.currency || "FCFA"}`} />
+              <Row label={t("staff.checklist.f.monthly_bill")} value={`${site.monthlyBill.toLocaleString("en-US")} ${site.currency || "FCFA"}`} />
             )}
             {site?.notes && (
               <div className="mt-3">
-                <div className="text-[11.5px] text-[color:var(--ink-faint)] font-semibold uppercase tracking-[.5px] mb-1">Notes / remarks</div>
+                <div className="text-[11.5px] text-[color:var(--ink-faint)] font-semibold uppercase tracking-[.5px] mb-1">{t("staff.checklist.f.notes")}</div>
                 <div className="text-[13.5px] text-[color:var(--ink)] whitespace-pre-wrap leading-relaxed border-l-2 border-[color:var(--border-strong)] pl-3">{site.notes}</div>
               </div>
             )}
           </Sec>
 
           {/* 6. Equipment list */}
-          <Sec title="6. Equipment inventory">
+          <Sec title={t("staff.checklist.sec.inventory")}>
             <table className="w-full border-collapse text-[13px]">
               <thead>
                 <tr style={{ background: "#F4F6FB" }}>
-                  <th style={{ textAlign: "left", padding: "8px 10px", border: "1px solid #E2E8F2", fontWeight: 700 }}>Item</th>
-                  <th style={{ textAlign: "right", padding: "8px 10px", border: "1px solid #E2E8F2", fontWeight: 700 }}>Qty</th>
-                  <th style={{ textAlign: "right", padding: "8px 10px", border: "1px solid #E2E8F2", fontWeight: 700 }}>Hrs / day</th>
-                  <th style={{ textAlign: "right", padding: "8px 10px", border: "1px solid #E2E8F2", fontWeight: 700 }}>W / unit</th>
-                  <th style={{ textAlign: "right", padding: "8px 10px", border: "1px solid #E2E8F2", fontWeight: 700 }}>kWh / day</th>
+                  <th style={{ textAlign: "left", padding: "8px 10px", border: "1px solid #E2E8F2", fontWeight: 700 }}>{t("staff.checklist.th.item")}</th>
+                  <th style={{ textAlign: "right", padding: "8px 10px", border: "1px solid #E2E8F2", fontWeight: 700 }}>{t("staff.checklist.th.qty")}</th>
+                  <th style={{ textAlign: "right", padding: "8px 10px", border: "1px solid #E2E8F2", fontWeight: 700 }}>{t("staff.checklist.th.hrs")}</th>
+                  <th style={{ textAlign: "right", padding: "8px 10px", border: "1px solid #E2E8F2", fontWeight: 700 }}>{t("staff.checklist.th.w")}</th>
+                  <th style={{ textAlign: "right", padding: "8px 10px", border: "1px solid #E2E8F2", fontWeight: 700 }}>{t("staff.checklist.th.kwh")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -228,7 +256,7 @@ export default async function ChecklistPage({ params }: { params: Promise<{ ref:
                   const d = (c.watts * qty * hrs * duty) / 1000;
                   return (
                     <tr key={c.id}>
-                      <td style={{ padding: "7px 10px", border: "1px solid #E2E8F2" }}>{c.label}</td>
+                      <td style={{ padding: "7px 10px", border: "1px solid #E2E8F2" }}>{t(`appliance.${c.id}` as DictKey)}</td>
                       <td style={{ padding: "7px 10px", border: "1px solid #E2E8F2", textAlign: "right" }}>{qty}</td>
                       <td style={{ padding: "7px 10px", border: "1px solid #E2E8F2", textAlign: "right" }}>{hrs}</td>
                       <td style={{ padding: "7px 10px", border: "1px solid #E2E8F2", textAlign: "right" }}>{c.watts}</td>
@@ -237,7 +265,7 @@ export default async function ChecklistPage({ params }: { params: Promise<{ ref:
                   );
                 })}
                 <tr style={{ background: "#F4F6FB", fontWeight: 700 }}>
-                  <td style={{ padding: "8px 10px", border: "1px solid #E2E8F2" }} colSpan={4}>Total</td>
+                  <td style={{ padding: "8px 10px", border: "1px solid #E2E8F2" }} colSpan={4}>{t("staff.checklist.total")}</td>
                   <td style={{ padding: "8px 10px", border: "1px solid #E2E8F2", textAlign: "right" }}>{fmt(a.computed.daily, 2)}</td>
                 </tr>
               </tbody>
@@ -245,7 +273,7 @@ export default async function ChecklistPage({ params }: { params: Promise<{ ref:
           </Sec>
 
           <footer className="mt-10 pt-4 border-t border-[color:var(--border)] text-[11.5px] text-[color:var(--ink-faint)] text-center">
-            Document generated by Norm Enerji Solar Assessment · {a.ref} · Page 1
+            {t("staff.checklist.footer")} · {a.ref} · Page 1
           </footer>
         </article>
       </div>

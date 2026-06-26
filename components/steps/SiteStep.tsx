@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Icon } from "../Icon";
 import { StepLabel, H1, Lede, PrimaryButton, BackButton, Section, fieldLabel, fieldInput } from "../ui";
 import {
@@ -42,6 +43,26 @@ export function SiteStep({
 }) {
   const t = useT();
   const disabled = !site.systemType || !site.installZone || !site.goal;
+
+  // Currency: pick from preset list or type a custom code. Start in "custom"
+  // mode if the stored currency isn't one of the presets (e.g. on back-nav).
+  const [customCurrency, setCustomCurrency] = useState(
+    () => !!site.currency && !CURRENCIES.includes(site.currency)
+  );
+  const onCurrencySelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const v = e.target.value;
+    if (v === "__other__") {
+      setCustomCurrency(true);
+      onChange("currency", "");
+    } else {
+      setCustomCurrency(false);
+      onChange("currency", v);
+    }
+  };
+  const resetCurrency = () => {
+    setCustomCurrency(false);
+    onChange("currency", "FCFA");
+  };
 
   return (
     <div className="anim-fadeUp max-w-[860px] mx-auto">
@@ -234,24 +255,48 @@ export function SiteStep({
             <label htmlFor="monthly-bill" className={fieldLabel}>
               <Icon name="receipt_long" size={15} className="align-[-2px] text-[color:var(--brand-amber)]" /> {t("site.extras.monthly_bill")}
             </label>
-            <div className="flex gap-2">
+            <div className="grid gap-2 [grid-template-columns:1fr_92px]">
               <input
                 id="monthly-bill"
                 inputMode="decimal"
                 value={site.monthlyBill}
                 onChange={(e) => onChange("monthlyBill", e.target.value.replace(/[^0-9.]/g, ""))}
                 placeholder={t("site.extras.monthly_bill_ph")}
-                className={`${fieldInput} flex-1 min-w-0`}
+                className={`${fieldInput} min-w-0`}
               />
-              <select
-                value={site.currency}
-                onChange={(e) => onChange("currency", e.target.value)}
-                className={`${fieldInput} w-[110px] cursor-pointer`}
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <div className="relative min-w-0">
+                {customCurrency ? (
+                  <>
+                    <input
+                      value={site.currency}
+                      onChange={(e) => onChange("currency", e.target.value.toUpperCase().slice(0, 6))}
+                      placeholder={t("site.extras.currency_other_ph")}
+                      autoFocus
+                      className={`${fieldInput} w-full pr-[24px] uppercase`}
+                    />
+                    <button
+                      type="button"
+                      onClick={resetCurrency}
+                      aria-label="reset"
+                      className="material-symbols absolute right-[6px] top-1/2 -translate-y-1/2 text-[color:var(--ink-faint)] bg-transparent border-0 p-0 cursor-pointer hover:text-[color:var(--ink-muted)]"
+                      style={{ fontSize: 18 }}
+                    >
+                      close
+                    </button>
+                  </>
+                ) : (
+                  <select
+                    value={site.currency}
+                    onChange={onCurrencySelect}
+                    className={`${fieldInput} cursor-pointer w-full`}
+                  >
+                    {CURRENCIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                    <option value="__other__">{t("site.extras.currency_other")}</option>
+                  </select>
+                )}
+              </div>
             </div>
             <span className="text-[11.5px] text-[color:var(--ink-faint)] mt-1 block">{t("site.extras.bill_hint")}</span>
           </div>
